@@ -1,0 +1,21 @@
+repository: "https://github.com/rootsami/terrad-examples"
+stacks:
+  - name: stack-one
+    version: 1.0.6
+    path: gcp/stack-one
+
+  - name: stack-two
+    version: 1.2.5
+    path: aws/stack-two
+
+  - name: stack-three
+    version: 1.0.6
+    path: gcp/stack-multi
+    tfvars: environments/three.tfvars
+    backend: environments/three.hcl
+
+  - name: stack-four
+    version: 1.0.6
+    path: gcp/stack-multi
+    tfvars: environments/four.tfvars
+    backend: environments/four.hcl
