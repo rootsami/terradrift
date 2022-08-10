@@ -30,6 +30,19 @@ func stackScan(stack Stack) {
 		log.Fatalf("%s: Error running NewTerraform: %s", stack.Name, err)
 	}
 
+	// TODO: stackPlan needs to run as a background scheduled job, a for loop is placed here just to prove the iteration works without downloading and initialzing with each run.
+	// for i := 1; i <= 1; i++ {
+	// 	result := stackPlan(stack, tf)
+	// }
+	stackPlan(stack, tf)
+
+}
+
+// stackPlan has been separated to be called indivisually with the schedule to avoid downloading/installing
+// the required terraform version.
+// initializing is part of the plan incase new modules added/upgraded to the stack code
+func stackPlan(stack Stack, tf *tfexec.Terraform) {
+
 	// Stacks come with two different structures:
 	// 1. All resources for multiple stacks (environments) exist in one directory and backend initialization is done with environments/<name>.hcl
 	// 2. Regular stack where all resources, tfvars and backend configs are in the same directory
@@ -40,30 +53,18 @@ func stackScan(stack Stack) {
 		// causing lots of issue with local terraform.tfstate while performing terraform plan
 		// solution would be export TF_DATA_DIR with customized .terraform naming to avoid the issue
 		os.Setenv("TF_DATA_DIR", ".terraform."+stack.Name)
-		err = tf.Init(context.Background(), tfexec.Upgrade(false), tfexec.BackendConfig(stack.Backend))
+		err := tf.Init(context.Background(), tfexec.Upgrade(false), tfexec.BackendConfig(stack.Backend))
 		if err != nil {
 			log.Fatalf("%s: Error running Init: %s", stack.Name, err)
 		}
 
 	} else {
 
-		err = tf.Init(context.Background(), tfexec.Upgrade(false))
+		err := tf.Init(context.Background(), tfexec.Upgrade(false))
 		if err != nil {
 			log.Fatalf("%s: Error running Init: %s", stack.Name, err)
 		}
 	}
-
-	// TODO: stackPlan needs to run as a background scheduled job, a for loop is placed here just to prove the iteration works without downloading and initialzing with each run.
-	// for i := 1; i <= 1; i++ {
-	// 	result := stackPlan(stack, tf)
-	// }
-	stackPlan(stack, tf)
-
-}
-
-// stackPlan has been separated to be called indivisually with the schedule to avoid downloading/installing
-// the required terraform version and initializing everytime the scan runs
-func stackPlan(stack Stack, tf *tfexec.Terraform) {
 
 	// Create TF Plan options
 	tfplanPath := workspace + stack.Path + "/tfplan-" + stack.Name
