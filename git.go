@@ -24,7 +24,8 @@ func gitClone(workspace, repoUrl string) {
 			Username: "-", // Yes, this can be anything except an empty string
 			Password: token,
 		},
-		URL: repoUrl,
+		URL:   repoUrl,
+		Depth: 1,
 	})
 
 	if err != nil {

@@ -1,11 +1,9 @@
 package main
 
 import (
-	"io/ioutil"
-	"log"
 	"os"
 
-	"gopkg.in/yaml.v3"
+	"github.com/gin-gonic/gin"
 )
 
 type Config struct {
@@ -21,30 +19,17 @@ type Stack struct {
 	Backend string `yaml:"backend"`
 }
 
-var workspace string
+var workspace, response string
 
 func main() {
 
 	pwd, _ := os.Getwd()
 	workspace = pwd + "/workspace/"
 
-	// Loading configuration file for repository and stack properties
-	// TODO: config validator
-	stackConfig, err := ioutil.ReadFile("config.yaml")
-	if err != nil {
-		log.Fatal(err)
-	}
+	gitClone(workspace, configLoader().Repository)
 
-	var config Config
-	loadConfig := yaml.Unmarshal(stackConfig, &config)
-	if loadConfig != nil {
-		log.Fatal(loadConfig)
-	}
+	route := gin.Default()
 
-	gitClone(workspace, config.Repository)
-
-	for _, s := range config.Stacks {
-		stackScan(s)
-
-	}
+	route.GET("/api/plan/:name", scanHandler)
+	route.Run(":8080")
 }
