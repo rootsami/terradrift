@@ -1,4 +1,4 @@
-module github.com/rootsami/terrad
+module github.com/rootsami/terradrift
 
 go 1.18
 
