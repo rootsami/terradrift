@@ -34,10 +34,10 @@ After setting up the configs in the above section
 ```
 It will start a local HTTP server on `http://localhost:8080`, where you can initiate terradrift calls HTTP request and passing stackname in the URL. 
 ```bash
-# curl http://localhost:8080/api/plan/stack-one
+# curl http://localhost:8080/api/plan?stack=stack-one
 "CHANGES DETECTED... Plan: 1 to add, 0 to change, 0 to destroy."
 
-# curl http://localhost:8080/api/plan/stack-three
+# curl http://localhost:8080/api/plan?stack=stack-three
 "No changes. Infrastructure matches the configuration."
 ```
 
@@ -46,8 +46,7 @@ This tool started as a fun project by Cumulus, but then it got INTERESTING! 🤩
 
 - Scheduled runs for all defined stacks.
 - Once drift is detected, then what? For how long?
-- Optimizations: No download/install for each run. has to be once.
-- Currently it's only `git clone` once, so we need scheduled `git pull` or with every stack run. TBD
+- Optimizations: No download/install for each run. it has to be once.
 
 
 ## Contributing

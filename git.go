@@ -13,7 +13,7 @@ func gitClone(workspace, repoUrl string) {
 
 	_, present := os.LookupEnv("GITHUB_AUTH_TOKEN")
 	if !present {
-		log.Fatalf("Error: Could not find GITHUB_AUTH_TOKEN, make sure it is exported as an environment variable")
+		log.Fatalf("ERROR: Could not find GITHUB_AUTH_TOKEN, make sure it is exported as an environment variable")
 	}
 
 	token := os.Getenv("GITHUB_AUTH_TOKEN")
@@ -24,14 +24,38 @@ func gitClone(workspace, repoUrl string) {
 			Username: "-", // Yes, this can be anything except an empty string
 			Password: token,
 		},
-		URL:   repoUrl,
-		Depth: 1,
+		URL: repoUrl,
+		// Depth: 1, // disabled for now because gitPull fails after shallow clone
 	})
 
 	if err != nil {
-		log.Fatalf("error: %s", err)
+		log.Fatalf("ERROR: %s", err)
 	}
 
 }
 
-// TODO: A scheduled job for pulling updates from upstream
+func gitPull(workspace string) {
+
+	r, err := git.PlainOpen(workspace)
+	if err != nil {
+		log.Printf("ERROR: PULL FAILED %s", err)
+	}
+
+	w, err := r.Worktree()
+	if err != nil {
+		log.Printf("ERROR: PULL FAILED %s", err)
+	}
+
+	token := os.Getenv("GITHUB_AUTH_TOKEN")
+	err = w.Pull(&git.PullOptions{
+		Auth: &http.BasicAuth{
+			Username: "-", // Yes, this can be anything except an empty string
+			Password: token,
+		},
+		Force: true,
+	})
+	if err != nil {
+		log.Printf("Fetching latest updates:%s", err)
+	}
+
+}

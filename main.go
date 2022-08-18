@@ -30,6 +30,6 @@ func main() {
 
 	route := gin.Default()
 
-	route.GET("/api/plan/:name", scanHandler)
+	route.GET("/api/plan", scanHandler)
 	route.Run(":8080")
 }

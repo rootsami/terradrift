@@ -21,6 +21,9 @@ func stackScan(name string) (string, error) {
 	stack, validStack := stackExists(name, config.Stacks)
 	if validStack {
 
+		// Checkout new commits/updates in repository
+		gitPull(workspace)
+
 		installer := &releases.ExactVersion{
 			Product: product.Terraform,
 			Version: version.Must(version.NewVersion(stack.Version)),
