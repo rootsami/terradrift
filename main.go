@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	log "github.com/sirupsen/logrus"
 )
 
 type Config struct {
@@ -22,6 +23,13 @@ type Stack struct {
 var workspace, response string
 
 func main() {
+
+	log.SetFormatter(&log.TextFormatter{
+		// DisableColors: true,
+		FullTimestamp: true,
+		// TimestampFormat: "%YYYY/%MM/%DD - %HH:%MM:%SS",
+		TimestampFormat: "2006/01/02 - 15:04:05",
+	})
 
 	pwd, _ := os.Getwd()
 	workspace = pwd + "/workspace/"

@@ -1,8 +1,9 @@
 package main
 
 import (
-	"log"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
@@ -17,7 +18,7 @@ func gitClone(workspace, repoUrl string) {
 	}
 
 	token := os.Getenv("GITHUB_AUTH_TOKEN")
-	log.Printf("Cloning repository %s", repoUrl)
+	log.Infof("Cloning repository %s", repoUrl)
 	_, err := git.PlainClone(workspace, false, &git.CloneOptions{
 
 		Auth: &http.BasicAuth{
@@ -38,12 +39,12 @@ func gitPull(workspace string) {
 
 	r, err := git.PlainOpen(workspace)
 	if err != nil {
-		log.Printf("ERROR: PULL FAILED %s", err)
+		log.Errorf("ERROR: PULL FAILED %s", err)
 	}
 
 	w, err := r.Worktree()
 	if err != nil {
-		log.Printf("ERROR: PULL FAILED %s", err)
+		log.Errorf("ERROR: PULL FAILED %s", err)
 	}
 
 	token := os.Getenv("GITHUB_AUTH_TOKEN")
@@ -55,7 +56,7 @@ func gitPull(workspace string) {
 		Force: true,
 	})
 	if err != nil {
-		log.Printf("Fetching latest updates:%s", err)
+		log.Warnf("Pulling latest updates: %s", err)
 	}
 
 }

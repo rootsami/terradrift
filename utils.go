@@ -2,7 +2,8 @@ package main
 
 import (
 	"io/ioutil"
-	"log"
+
+	log "github.com/sirupsen/logrus"
 
 	"gopkg.in/yaml.v2"
 )
