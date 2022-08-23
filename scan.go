@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"os"
 	"regexp"
 
 	log "github.com/sirupsen/logrus"
@@ -81,16 +80,23 @@ func stackPlan(stack Stack, tf *tfexec.Terraform) (string, error) {
 	// Stacks come with two different structures:
 	// 1. All resources for multiple stacks (environments) exist in one directory and backend initialization is done with environments/<name>.hcl
 	// 2. Regular stack where all resources, tfvars and backend configs are in the same directory
+
+	// during the initialization, .terrafom directory collides with other environments' .terraform
+	// causing lots of issue with local terraform.tfstate while performing terraform plan
+	// solution would be export TF_DATA_DIR with customized .terraform naming to avoid the issue
+
 	log.WithFields(log.Fields{
 		"stack":   stack.Name,
 		"version": stack.Version,
 	}).Info("Initializing Terraform...")
+
+	tfEnvVars := map[string]string{
+		"TF_DATA_DIR": ".terraform." + stack.Name,
+	}
+	tf.SetEnv(tfEnvVars)
+
 	if len(stack.Backend) > 0 {
 
-		// during the initialization, .terrafom directory collides with other environments' .terraform
-		// causing lots of issue with local terraform.tfstate while performing terraform plan
-		// solution would be export TF_DATA_DIR with customized .terraform naming to avoid the issue
-		os.Setenv("TF_DATA_DIR", ".terraform."+stack.Name)
 		err := tf.Init(context.Background(), tfexec.Upgrade(false), tfexec.BackendConfig(stack.Backend))
 		if err != nil {
 			log.WithFields(log.Fields{
@@ -114,10 +120,10 @@ func stackPlan(stack Stack, tf *tfexec.Terraform) (string, error) {
 
 	// Create TF Plan options
 	tfplanPath := workspace + stack.Path + "/tfplan-" + stack.Name
-	stackPlanOut := tfexec.Out(tfplanPath)
+	stackPlanFile := tfexec.Out(tfplanPath)
 
 	if len(stack.TFvars) > 0 {
-		plan, err := tf.Plan(context.Background(), stackPlanOut, tfexec.VarFile(stack.TFvars))
+		plan, err := tf.Plan(context.Background(), stackPlanFile, tfexec.VarFile(stack.TFvars))
 		if err != nil {
 			log.WithFields(log.Fields{
 				"stack":   stack.Name,
@@ -132,7 +138,7 @@ func stackPlan(stack Stack, tf *tfexec.Terraform) (string, error) {
 		}
 
 	} else {
-		plan, err := tf.Plan(context.Background(), stackPlanOut)
+		plan, err := tf.Plan(context.Background(), stackPlanFile)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"stack":   stack.Name,

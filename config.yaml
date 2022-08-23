@@ -1,3 +1,9 @@
+hostname: localhost
+port: 8080
+protocol: http
+
+interval: 60 # in-seconds
+
 repository: "https://github.com/rootsami/terrad-examples"
 stacks:
   - name: stack-one

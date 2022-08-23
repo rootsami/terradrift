@@ -8,6 +8,10 @@ import (
 )
 
 type Config struct {
+	Hostname   string  `yaml:"hostname"`
+	Port       string  `yaml:"port"`
+	Protocol   string  `yaml:"protocol"`
+	Interval   int     `yaml:"interval"`
 	Repository string  `yaml:"repository"`
 	Stacks     []Stack `yaml:"stacks"`
 }
@@ -25,7 +29,6 @@ var workspace, response string
 func main() {
 
 	log.SetFormatter(&log.TextFormatter{
-		// DisableColors: true,
 		FullTimestamp: true,
 		// TimestampFormat: "%YYYY/%MM/%DD - %HH:%MM:%SS",
 		TimestampFormat: "2006/01/02 - 15:04:05",
@@ -36,8 +39,10 @@ func main() {
 
 	gitClone(workspace, configLoader().Repository)
 
+	scheduler()
+
 	route := gin.Default()
 
 	route.GET("/api/plan", scanHandler)
-	route.Run(":8080")
+	route.Run(":" + configLoader().Port)
 }
