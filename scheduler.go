@@ -25,9 +25,9 @@ func scheduler() {
 }
 
 func caller(name string) {
-	hostname := configLoader().Hostname
-	port := configLoader().Port
-	protocol := configLoader().Protocol
+	hostname := configLoader().Server.Hostname
+	port := configLoader().Server.Port
+	protocol := configLoader().Server.Protocol
 	url := protocol + "://" + hostname + ":" + port + "/api/plan?stack=" + name
 
 	_, err := http.Get(url)

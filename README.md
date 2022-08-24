@@ -11,6 +11,12 @@ The design of the service should be a running server that continuously runs thos
 In [config.yaml](config.yaml), you have to define which repository that terradrift will scan those stacks from, also the stack's name, version and environment-specific variables.
 example:
 ```yaml
+server:
+  hostname: localhost
+  port: 8080
+  protocol: http
+interval: 60
+
 repository: "https://github.com/rootsami/terrad-examples"
 stacks:
   - name: stack-one

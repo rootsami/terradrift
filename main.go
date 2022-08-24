@@ -8,12 +8,16 @@ import (
 )
 
 type Config struct {
-	Hostname   string  `yaml:"hostname"`
-	Port       string  `yaml:"port"`
-	Protocol   string  `yaml:"protocol"`
+	Server     Server  `yaml:"server"`
 	Interval   int     `yaml:"interval"`
 	Repository string  `yaml:"repository"`
 	Stacks     []Stack `yaml:"stacks"`
+}
+
+type Server struct {
+	Hostname string `yaml:"hostname"`
+	Port     string `yaml:"port"`
+	Protocol string `yaml:"protocol"`
 }
 
 type Stack struct {
@@ -44,5 +48,5 @@ func main() {
 	route := gin.Default()
 
 	route.GET("/api/plan", scanHandler)
-	route.Run(":" + configLoader().Port)
+	route.Run(":" + configLoader().Server.Port)
 }
