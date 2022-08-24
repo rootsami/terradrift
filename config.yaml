@@ -7,22 +7,22 @@ interval: 60 # in-seconds
 
 repository: "https://github.com/rootsami/terrad-examples"
 stacks:
-  - name: stack-one
+  - name: core-staging
     version: 1.0.6
-    path: gcp/stack-one
+    path: gcp/core-staging
 
-  - name: stack-two
+  - name: core-production
     version: 1.2.5
-    path: aws/stack-two
+    path: aws/core-production
 
-  - name: stack-three
+  - name: api-staging
     version: 1.0.6
-    path: gcp/stack-multi
-    tfvars: environments/three.tfvars
-    backend: environments/three.hcl
+    path: gcp/api
+    tfvars: environments/staging.tfvars
+    backend: environments/staging.hcl
 
-  - name: stack-four
+  - name: api-production
     version: 1.0.6
-    path: gcp/stack-multi
-    tfvars: environments/four.tfvars
-    backend: environments/four.hcl
+    path: gcp/api
+    tfvars: environments/production.tfvars
+    backend: environments/production.hcl
