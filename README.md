@@ -50,9 +50,9 @@ It will start a local HTTP server on `http://localhost:8080`, where you can init
 ## Roadmap
 This tool started as a fun project by Cumulus, but then it got INTERESTING! 🤩 
 
-- Scheduled runs for all defined stacks.
+- ~Scheduled runs for all defined stacks.~ Done
 - Once drift is detected, then what? For how long?
-- Optimizations: No download/install for each run. it has to be once.
+- ~Optimizations: No download/install for each run. it has to be once.~ Done
 
 
 ## Contributing
