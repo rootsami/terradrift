@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
 	"regexp"
 
 	log "github.com/sirupsen/logrus"
@@ -29,27 +31,19 @@ func stackScan(name string) (string, error) {
 
 		tf, err := tfexec.NewTerraform(workspace+stack.Path, execPath)
 		if err != nil {
-			log.WithFields(log.Fields{
-				"stack":   stack.Name,
-				"version": stack.Version,
-			}).Errorf("Running NewTerraform: %s", err)
+			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Errorf("Running NewTerraform: %s", err)
 			return "Error:", err
 		}
 
 		response, err := stackPlan(stack, tf)
 		if err != nil {
-			log.WithFields(log.Fields{
-				"stack":   stack.Name,
-				"version": stack.Version,
-			}).Error(err)
+			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error(err)
 		}
 
 		return response, err
 
 	} else {
-		log.WithFields(log.Fields{
-			"stack": name,
-		}).Error("STACK WAS NOT FOUND")
+		log.WithFields(log.Fields{"stack": name}).Error("STACK WAS NOT FOUND")
 		err := fmt.Errorf("ERROR: STACK WAS NOT FOUND")
 		return response, err
 	}
@@ -70,10 +64,7 @@ func stackPlan(stack Stack, tf *tfexec.Terraform) (string, error) {
 	// causing lots of issue with local terraform.tfstate while performing terraform plan
 	// solution would be export TF_DATA_DIR with customized .terraform naming to avoid the issue
 
-	log.WithFields(log.Fields{
-		"stack":   stack.Name,
-		"version": stack.Version,
-	}).Info("Initializing Terraform...")
+	log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Info("Initializing Terraform...")
 
 	tfEnvVars := map[string]string{
 		"TF_DATA_DIR": ".terraform." + stack.Name,
@@ -84,10 +75,7 @@ func stackPlan(stack Stack, tf *tfexec.Terraform) (string, error) {
 
 		err := tf.Init(context.Background(), tfexec.Upgrade(false), tfexec.BackendConfig(stack.Backend))
 		if err != nil {
-			log.WithFields(log.Fields{
-				"stack":   stack.Name,
-				"version": stack.Version,
-			}).Error("Running Init")
+			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error("Running Init")
 			return "Error:", err
 		}
 
@@ -95,10 +83,7 @@ func stackPlan(stack Stack, tf *tfexec.Terraform) (string, error) {
 
 		err := tf.Init(context.Background(), tfexec.Upgrade(false))
 		if err != nil {
-			log.WithFields(log.Fields{
-				"stack":   stack.Name,
-				"version": stack.Version,
-			}).Error("Running Init")
+			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error("Running Init")
 			return "Error:", err
 		}
 	}
@@ -110,10 +95,7 @@ func stackPlan(stack Stack, tf *tfexec.Terraform) (string, error) {
 	if len(stack.TFvars) > 0 {
 		plan, err := tf.Plan(context.Background(), stackPlanFile, tfexec.VarFile(stack.TFvars))
 		if err != nil {
-			log.WithFields(log.Fields{
-				"stack":   stack.Name,
-				"version": stack.Version,
-			}).Error("Running Plan")
+			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error("Running Plan")
 			return "Error:", err
 		}
 
@@ -125,10 +107,7 @@ func stackPlan(stack Stack, tf *tfexec.Terraform) (string, error) {
 	} else {
 		plan, err := tf.Plan(context.Background(), stackPlanFile)
 		if err != nil {
-			log.WithFields(log.Fields{
-				"stack":   stack.Name,
-				"version": stack.Version,
-			}).Error("Running Plan")
+			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error("Running Plan")
 			return "Error:", err
 		}
 
@@ -148,51 +127,49 @@ func showPlan(plan bool, planFile string, name string, tf *tfexec.Terraform) (st
 
 		state, err := tf.ShowPlanFileRaw(context.Background(), planFile)
 		if err != nil {
-			log.WithFields(log.Fields{
-				"stack": name,
-			}).Errorf("Running show: %s", err)
+			log.WithFields(log.Fields{"stack": name}).Errorf("Running show: %s", err)
 			return "ERROR:", err
 		}
 
 		re := regexp.MustCompile("Plan:.*")
 		summary := re.FindString(state)
-		log.WithFields(log.Fields{
-			"stack":   name,
-			"summary": summary,
-		}).Info("CHANGES DETECTED...")
+		log.WithFields(log.Fields{"stack": name, "summary": summary}).Info("CHANGES DETECTED...")
 		return fmt.Sprintf("CHANGES DETECTED... %s", summary), err
 
 	} else {
-		log.WithFields(log.Fields{
-			"stack":   name,
-			"summary": "No changes. Infrastructure matches the configuration.",
-		}).Info("NO CHANGES...")
+		log.WithFields(log.Fields{"stack": name, "summary": "No changes. Infrastructure matches the configuration."}).Info("NO CHANGES...")
 		return "No changes. Infrastructure matches the configuration.", err
 	}
 
 }
 
 // install should recieve a terraform version and return the execution path
-// currently it installs for each run, but this has to be changed.
-// TODO: Record a path of every version and if doesn't exits it installs it
 func install(stack Stack) (execPath string) {
 
-	installer := &releases.ExactVersion{
-		Product: product.Terraform,
-		Version: version.Must(version.NewVersion(stack.Version)),
+	execPathDir := "/tmp/binaries/" + stack.Version
+	execPath = execPathDir + "/terraform"
+
+	if _, err := os.Stat(execPath); errors.Is(err, os.ErrNotExist) {
+		os.MkdirAll(execPathDir, os.ModePerm)
+		installer := &releases.ExactVersion{
+			Product:    product.Terraform,
+			Version:    version.Must(version.NewVersion(stack.Version)),
+			InstallDir: execPathDir,
+		}
+
+		log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Info("Installing Terraform...")
+
+		execPath, err := installer.Install(context.Background())
+		if err != nil {
+			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Errorf("Installing Terraform: %s", err)
+		}
+		return execPath
+
+	} else {
+
+		log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Info("Skipping download, Terraform binary found...")
+
+		return execPath
 	}
 
-	log.WithFields(log.Fields{
-		"stack":   stack.Name,
-		"version": stack.Version,
-	}).Info("Installing Terraform...")
-
-	exePath, err := installer.Install(context.Background())
-	if err != nil {
-		log.WithFields(log.Fields{
-			"stack":   stack.Name,
-			"version": stack.Version,
-		}).Errorf("Installing Terraform: %s", err)
-	}
-	return exePath
 }
