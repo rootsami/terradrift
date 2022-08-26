@@ -24,25 +24,8 @@ func stackScan(name string) (string, error) {
 		// Checkout new commits/updates in repository
 		gitPull(workspace)
 
-		// TODO: Install should opt-out of this function to allow download only happen once. Where you pass the needed version
-		// and it return the execPath
-		installer := &releases.ExactVersion{
-			Product: product.Terraform,
-			Version: version.Must(version.NewVersion(stack.Version)),
-		}
-
-		log.WithFields(log.Fields{
-			"stack":   stack.Name,
-			"version": stack.Version,
-		}).Info("Installing Terraform...")
-		execPath, err := installer.Install(context.Background())
-		if err != nil {
-			log.WithFields(log.Fields{
-				"stack":   stack.Name,
-				"version": stack.Version,
-			}).Errorf("Installing Terraform: %s", err)
-			return "Error:", err
-		}
+		// The path for terrafom binary
+		execPath := install(stack)
 
 		tf, err := tfexec.NewTerraform(workspace+stack.Path, execPath)
 		if err != nil {
@@ -187,4 +170,29 @@ func showPlan(plan bool, planFile string, name string, tf *tfexec.Terraform) (st
 		return "No changes. Infrastructure matches the configuration.", err
 	}
 
+}
+
+// install should recieve a terraform version and return the execution path
+// currently it installs for each run, but this has to be changed.
+// TODO: Record a path of every version and if doesn't exits it installs it
+func install(stack Stack) (execPath string) {
+
+	installer := &releases.ExactVersion{
+		Product: product.Terraform,
+		Version: version.Must(version.NewVersion(stack.Version)),
+	}
+
+	log.WithFields(log.Fields{
+		"stack":   stack.Name,
+		"version": stack.Version,
+	}).Info("Installing Terraform...")
+
+	exePath, err := installer.Install(context.Background())
+	if err != nil {
+		log.WithFields(log.Fields{
+			"stack":   stack.Name,
+			"version": stack.Version,
+		}).Errorf("Installing Terraform: %s", err)
+	}
+	return exePath
 }
