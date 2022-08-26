@@ -24,6 +24,8 @@ func stackScan(name string) (string, error) {
 		// Checkout new commits/updates in repository
 		gitPull(workspace)
 
+		// TODO: Install should opt-out of this function to allow download only happen once. Where you pass the needed version
+		// and it return the execPath
 		installer := &releases.ExactVersion{
 			Product: product.Terraform,
 			Version: version.Must(version.NewVersion(stack.Version)),
@@ -119,8 +121,8 @@ func stackPlan(stack Stack, tf *tfexec.Terraform) (string, error) {
 	}
 
 	// Create TF Plan options
-	tfplanPath := workspace + stack.Path + "/tfplan-" + stack.Name
-	stackPlanFile := tfexec.Out(tfplanPath)
+	planFile := workspace + stack.Path + "/" + stack.Name + ".plan"
+	stackPlanFile := tfexec.Out(planFile)
 
 	if len(stack.TFvars) > 0 {
 		plan, err := tf.Plan(context.Background(), stackPlanFile, tfexec.VarFile(stack.TFvars))
@@ -132,7 +134,7 @@ func stackPlan(stack Stack, tf *tfexec.Terraform) (string, error) {
 			return "Error:", err
 		}
 
-		response, err = showPlan(plan, tfplanPath, stack.Name, tf)
+		response, err = showPlan(plan, planFile, stack.Name, tf)
 		if err != nil {
 			return "Error:", err
 		}
@@ -147,7 +149,7 @@ func stackPlan(stack Stack, tf *tfexec.Terraform) (string, error) {
 			return "Error:", err
 		}
 
-		response, err = showPlan(plan, tfplanPath, stack.Name, tf)
+		response, err = showPlan(plan, planFile, stack.Name, tf)
 		if err != nil {
 			return "Error:", err
 		}
@@ -156,12 +158,12 @@ func stackPlan(stack Stack, tf *tfexec.Terraform) (string, error) {
 	return response, err
 }
 
-func showPlan(plan bool, tfplanPath string, name string, tf *tfexec.Terraform) (string, error) {
+func showPlan(plan bool, planFile string, name string, tf *tfexec.Terraform) (string, error) {
 
 	var err error
 	if plan {
 
-		state, err := tf.ShowPlanFileRaw(context.Background(), tfplanPath)
+		state, err := tf.ShowPlanFileRaw(context.Background(), planFile)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"stack": name,

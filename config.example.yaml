@@ -1,0 +1,28 @@
+server:
+  hostname: localhost
+  port: 8080
+  protocol: http
+
+interval: 60 # in-seconds
+
+repository: "https://github.com/rootsami/terrad-examples"
+stacks:
+  - name: core-staging
+    version: 1.0.6
+    path: gcp/core-staging
+
+  - name: core-production
+    version: 1.2.5
+    path: aws/core-production
+
+  - name: api-staging
+    version: 1.0.6
+    path: gcp/api
+    tfvars: environments/staging.tfvars
+    backend: environments/staging.hcl
+
+  - name: api-production
+    version: 1.0.6
+    path: gcp/api
+    tfvars: environments/production.tfvars
+    backend: environments/production.hcl
