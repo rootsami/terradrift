@@ -18,21 +18,9 @@ func configLoader() Config {
 	}
 
 	var config Config
-	loadConfig := yaml.Unmarshal(stackConfig, &config)
-	if loadConfig != nil {
-		log.Fatal(loadConfig)
+	err = yaml.Unmarshal(stackConfig, &config)
+	if err != nil {
+		log.Fatal(err)
 	}
 	return config
-}
-
-// stackExists checks if the requested stack exists in the configration file
-func stackExists(name string, stacks []Stack) (stack Stack, result bool) {
-	result = false
-	for _, stack := range stacks {
-		if stack.Name == name {
-			result = true
-			return stack, result
-		}
-	}
-	return stack, result
 }

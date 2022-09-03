@@ -28,7 +28,14 @@ type Stack struct {
 	Backend string `yaml:"backend"`
 }
 
-var workspace, response string
+var workspace string
+
+func init() {
+
+	pwd, _ := os.Getwd()
+	workspace = pwd + "/workspace/"
+
+}
 
 func main() {
 
@@ -37,9 +44,6 @@ func main() {
 		// TimestampFormat: "%YYYY/%MM/%DD - %HH:%MM:%SS",
 		TimestampFormat: "2006/01/02 - 15:04:05",
 	})
-
-	pwd, _ := os.Getwd()
-	workspace = pwd + "/workspace/"
 
 	gitClone(workspace, configLoader().Repository)
 

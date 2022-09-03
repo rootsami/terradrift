@@ -18,6 +18,7 @@ import (
 // The main function for installing the exact version of the stack, initiate and run terraform plan
 func stackScan(name string) (string, error) {
 
+	var response string
 	config := configLoader()
 
 	stack, validStack := stackExists(name, config.Stacks)
@@ -55,37 +56,26 @@ func stackScan(name string) (string, error) {
 // initializing is part of the plan incase new modules added/upgraded to the stack code
 func stackPlan(stack Stack, tf *tfexec.Terraform) (string, error) {
 
-	var err error
 	// Stacks come with two different structures:
 	// 1. All resources for multiple stacks (environments) exist in one directory and backend initialization is done with environments/<name>.hcl
 	// 2. Regular stack where all resources, tfvars and backend configs are in the same directory
 
 	// during the initialization, .terrafom directory collides with other environments' .terraform
-	// causing lots of issue with local terraform.tfstate while performing terraform plan
+	// causing lots of issues with local terraform.tfstate while performing terraform plan
 	// solution would be export TF_DATA_DIR with customized .terraform naming to avoid the issue
 
 	log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Info("Initializing Terraform...")
 
+	var response string
 	tfEnvVars := map[string]string{
 		"TF_DATA_DIR": ".terraform." + stack.Name,
 	}
 	tf.SetEnv(tfEnvVars)
 
-	if len(stack.Backend) > 0 {
-
-		err := tf.Init(context.Background(), tfexec.Upgrade(false), tfexec.BackendConfig(stack.Backend))
-		if err != nil {
-			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error("Running Init")
-			return "Error:", err
-		}
-
-	} else {
-
-		err := tf.Init(context.Background(), tfexec.Upgrade(false))
-		if err != nil {
-			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error("Running Init")
-			return "Error:", err
-		}
+	err := tf.Init(context.Background(), tfexec.Upgrade(false), tfexec.BackendConfig(stack.Backend))
+	if err != nil {
+		log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error("Running Init")
+		return "Error:", err
 	}
 
 	// Create TF Plan options
@@ -172,4 +162,16 @@ func install(stack Stack) (execPath string) {
 		return execPath
 	}
 
+}
+
+// stackExists checks if the requested stack exists in the configration file
+func stackExists(name string, stacks []Stack) (stack Stack, result bool) {
+	result = false
+	for _, stack := range stacks {
+		if stack.Name == name {
+			result = true
+			return stack, result
+		}
+	}
+	return stack, result
 }

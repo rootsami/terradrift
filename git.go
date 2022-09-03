@@ -12,12 +12,11 @@ import (
 // cloning the repository that contains all terraform stacks
 func gitClone(workspace, repoUrl string) {
 
-	_, present := os.LookupEnv("GITHUB_AUTH_TOKEN")
+	token, present := os.LookupEnv("GITHUB_AUTH_TOKEN")
 	if !present {
 		log.Fatalf("ERROR: Could not find GITHUB_AUTH_TOKEN, make sure it is exported as an environment variable")
 	}
 
-	token := os.Getenv("GITHUB_AUTH_TOKEN")
 	log.Infof("Cloning repository %s", repoUrl)
 	_, err := git.PlainClone(workspace, false, &git.CloneOptions{
 

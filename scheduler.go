@@ -16,7 +16,7 @@ func scheduler() {
 	for _, s := range stacks {
 
 		job := gocron.NewScheduler(time.UTC)
-		job.Every(interval).Seconds().Do(caller, s.Name)
+		job.Every(interval).Seconds().Do(apiCaller, s.Name)
 
 		job.StartAsync()
 
@@ -24,7 +24,7 @@ func scheduler() {
 
 }
 
-func caller(name string) {
+func apiCaller(name string) {
 	hostname := configLoader().Server.Hostname
 	port := configLoader().Server.Port
 	protocol := configLoader().Server.Protocol
