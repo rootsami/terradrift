@@ -11,13 +11,6 @@ The design of the service should be a running server that continuously runs thos
 In [config.yaml](config.yaml), you have to define which repository that terradrift will scan those stacks from, also the stack's name, version and environment-specific variables.
 example:
 ```yaml
-server:
-  hostname: localhost
-  port: 8080
-  protocol: http
-interval: 60
-
-repository: "https://github.com/rootsami/terrad-examples"
 stacks:
   - name: stack-one
     version: 1.0.6
@@ -30,13 +23,25 @@ stacks:
     backend: environments/three.hcl
 ```
 
-Also, you will have export `GITHUB_AUTH_TOKEN` as an environment variable to be able to checkout private repositories.
-
 ## How to develop/use terradrift locally?
 After setting up the configs in the above section
 ```bash
-# go build
-# ./terradrift 
+# go build .
+./terradrift --help
+
+usage: terradrift --repository=REPOSITORY --git-token=GIT-TOKEN [<flags>]
+
+A tool to detect drifts in terraform IaC
+
+Flags:
+  --help                   Show context-sensitive help (also try --help-long and --help-man).
+  --hostname="localhost"   hostname that apil will be exposed.
+  --port="8080"            port of the service api is listening on
+  --protocol="http"        The protocol of exposed endpoint http/https
+  --repository=REPOSITORY  The git repository which include all terraform stacks
+  --git-token=GIT-TOKEN    Personal access token to access git repositories
+  --interval=60            The interval for scan scheduler
+  --config="config.yaml"   Path for configuration file holding the stack information
 ```
 It will start a local HTTP server on `http://localhost:8080`, where you can initiate terradrift calls HTTP request and passing stackname in the URL. 
 ```bash

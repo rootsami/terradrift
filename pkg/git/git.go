@@ -1,7 +1,8 @@
-package main
+package git
 
 import (
-	"os"
+	"context"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -10,15 +11,12 @@ import (
 )
 
 // cloning the repository that contains all terraform stacks
-func gitClone(workspace, repoUrl string) {
+func GitClone(workspace, token, repoUrl string) {
 
-	token, present := os.LookupEnv("GITHUB_AUTH_TOKEN")
-	if !present {
-		log.Fatalf("ERROR: Could not find GITHUB_AUTH_TOKEN, make sure it is exported as an environment variable")
-	}
-
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(60)*time.Second)
+	defer cancel()
 	log.Infof("Cloning repository %s", repoUrl)
-	_, err := git.PlainClone(workspace, false, &git.CloneOptions{
+	_, err := git.PlainCloneContext(ctx, workspace, false, &git.CloneOptions{
 
 		Auth: &http.BasicAuth{
 			Username: "-", // Yes, this can be anything except an empty string
@@ -34,7 +32,10 @@ func gitClone(workspace, repoUrl string) {
 
 }
 
-func gitPull(workspace string) {
+func GitPull(workspace, token string) {
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(60)*time.Second)
+	defer cancel()
 
 	r, err := git.PlainOpen(workspace)
 	if err != nil {
@@ -46,8 +47,7 @@ func gitPull(workspace string) {
 		log.Errorf("ERROR: PULL FAILED %s", err)
 	}
 
-	token := os.Getenv("GITHUB_AUTH_TOKEN")
-	err = w.Pull(&git.PullOptions{
+	err = w.PullContext(ctx, &git.PullOptions{
 		Auth: &http.BasicAuth{
 			Username: "-", // Yes, this can be anything except an empty string
 			Password: token,

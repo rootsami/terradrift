@@ -1,4 +1,4 @@
-package main
+package stacks
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"os"
 	"regexp"
 
+	"github.com/rootsami/terradrift/pkg/config"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/hashicorp/go-version"
@@ -16,16 +17,13 @@ import (
 )
 
 // The main function for installing the exact version of the stack, initiate and run terraform plan
-func stackScan(name string) (string, error) {
+func StackScan(name, workspace, configPath string) (string, error) {
 
 	var response string
-	config := configLoader()
+	config := config.ConfigLoader(configPath)
 
 	stack, validStack := stackExists(name, config.Stacks)
 	if validStack {
-
-		// Checkout new commits/updates in repository
-		gitPull(workspace)
 
 		// The path for terrafom binary
 		execPath := install(stack)
@@ -33,10 +31,10 @@ func stackScan(name string) (string, error) {
 		tf, err := tfexec.NewTerraform(workspace+stack.Path, execPath)
 		if err != nil {
 			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Errorf("Running NewTerraform: %s", err)
-			return "Error:", err
+			return "", err
 		}
 
-		response, err := stackPlan(stack, tf)
+		response, err := stackPlan(workspace, stack, tf)
 		if err != nil {
 			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error(err)
 		}
@@ -51,10 +49,9 @@ func stackScan(name string) (string, error) {
 
 }
 
-// stackPlan has been separated to be called indivisually with the schedule to avoid downloading/installing
-// the required terraform version.
-// initializing is part of the plan incase new modules added/upgraded to the stack code
-func stackPlan(stack Stack, tf *tfexec.Terraform) (string, error) {
+// StackPlan is separated to be called indivisually to avoid downloading/installing terraform binaries of the same version.
+// Initializing is part of the plan incase new modules added/upgraded to the stack code
+func stackPlan(workspace string, stack config.Stack, tf *tfexec.Terraform) (string, error) {
 
 	// Stacks come with two different structures:
 	// 1. All resources for multiple stacks (environments) exist in one directory and backend initialization is done with environments/<name>.hcl
@@ -75,7 +72,7 @@ func stackPlan(stack Stack, tf *tfexec.Terraform) (string, error) {
 	err := tf.Init(context.Background(), tfexec.Upgrade(false), tfexec.BackendConfig(stack.Backend))
 	if err != nil {
 		log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error("Running Init")
-		return "Error:", err
+		return "", err
 	}
 
 	// Create TF Plan options
@@ -86,24 +83,24 @@ func stackPlan(stack Stack, tf *tfexec.Terraform) (string, error) {
 		plan, err := tf.Plan(context.Background(), stackPlanFile, tfexec.VarFile(stack.TFvars))
 		if err != nil {
 			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error("Running Plan")
-			return "Error:", err
+			return "", err
 		}
 
 		response, err = showPlan(plan, planFile, stack.Name, tf)
 		if err != nil {
-			return "Error:", err
+			return "", err
 		}
 
 	} else {
 		plan, err := tf.Plan(context.Background(), stackPlanFile)
 		if err != nil {
 			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error("Running Plan")
-			return "Error:", err
+			return "", err
 		}
 
 		response, err = showPlan(plan, planFile, stack.Name, tf)
 		if err != nil {
-			return "Error:", err
+			return "", err
 		}
 	}
 
@@ -118,7 +115,7 @@ func showPlan(plan bool, planFile string, name string, tf *tfexec.Terraform) (st
 		state, err := tf.ShowPlanFileRaw(context.Background(), planFile)
 		if err != nil {
 			log.WithFields(log.Fields{"stack": name}).Errorf("Running show: %s", err)
-			return "ERROR:", err
+			return "", err
 		}
 
 		re := regexp.MustCompile("Plan:.*")
@@ -134,7 +131,7 @@ func showPlan(plan bool, planFile string, name string, tf *tfexec.Terraform) (st
 }
 
 // install should recieve a terraform version and return the execution path
-func install(stack Stack) (execPath string) {
+func install(stack config.Stack) (execPath string) {
 
 	execPathDir := "/tmp/binaries/" + stack.Version
 	execPath = execPathDir + "/terraform"
@@ -165,7 +162,7 @@ func install(stack Stack) (execPath string) {
 }
 
 // stackExists checks if the requested stack exists in the configration file
-func stackExists(name string, stacks []Stack) (stack Stack, result bool) {
+func stackExists(name string, stacks []config.Stack) (stack config.Stack, result bool) {
 	result = false
 	for _, stack := range stacks {
 		if stack.Name == name {
