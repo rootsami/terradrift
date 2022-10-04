@@ -16,15 +16,16 @@ import (
 )
 
 var (
-	app        = kingpin.New("terradrift", "A tool to detect drifts in terraform IaC")
-	hostname   = app.Flag("hostname", "hostname that apil will be exposed.").Default("localhost").String()
-	port       = app.Flag("port", "port of the service api is listening on").Default("8080").String()
-	protocol   = app.Flag("protocol", "The protocol of exposed endpoint http/https").Default("http").String()
-	repository = app.Flag("repository", "The git repository which include all terraform stacks ").Required().String()
-	gitToken   = app.Flag("git-token", "Personal access token to access git repositories").Required().String()
-	interval   = app.Flag("interval", "The interval for scan scheduler").Default("60").Int()
-	configPath = app.Flag("config", "Path for configuration file holding the stack information").Default("config.yaml").String()
-	workspace  string
+	app              = kingpin.New("terradrift", "A tool to detect drifts in terraform IaC")
+	hostname         = app.Flag("hostname", "hostname that apil will be exposed.").Default("localhost").String()
+	port             = app.Flag("port", "port of the service api is listening on").Default("8080").String()
+	protocol         = app.Flag("protocol", "The protocol of exposed endpoint http/https").Default("http").String()
+	repository       = app.Flag("repository", "The git repository which include all terraform stacks ").Required().String()
+	gitToken         = app.Flag("git-token", "Personal access token to access git repositories").Required().String()
+	interval         = app.Flag("interval", "The interval for scan scheduler").Default("60").Int()
+	configPath       = app.Flag("config", "Path for configuration file holding the stack information").Default("config.yaml").String()
+	extraBackendVars = app.Flag("extra-backend-vars", "Extra backend environment variables ex. GOOGLE_CREDENTIALS OR AWS_ACCESS_KEY").StringMap()
+	workspace        string
 )
 
 func init() {
@@ -72,7 +73,7 @@ func main() {
 func scanHandler(c *gin.Context) {
 
 	name := c.Query("stack")
-	planResp, err := stacks.StackScan(name, workspace, *configPath)
+	planResp, err := stacks.StackScan(name, workspace, *configPath, *extraBackendVars)
 
 	if err == nil {
 

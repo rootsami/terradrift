@@ -13,7 +13,7 @@ import (
 // cloning the repository that contains all terraform stacks
 func GitClone(workspace, token, repoUrl string) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(60)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(120)*time.Second)
 	defer cancel()
 	log.Infof("Cloning repository %s", repoUrl)
 	_, err := git.PlainCloneContext(ctx, workspace, false, &git.CloneOptions{
@@ -34,7 +34,7 @@ func GitClone(workspace, token, repoUrl string) {
 
 func GitPull(workspace, token string) {
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(60)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(120)*time.Second)
 	defer cancel()
 
 	r, err := git.PlainOpen(workspace)

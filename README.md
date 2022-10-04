@@ -42,6 +42,10 @@ Flags:
   --git-token=GIT-TOKEN    Personal access token to access git repositories
   --interval=60            The interval for scan scheduler
   --config="config.yaml"   Path for configuration file holding the stack information
+  --extra-backend-vars=EXTRA-BACKEND-VARS ...  
+                           Extra backend environment variables ex. GOOGLE_CREDENTIALS OR AWS_ACCESS_KEY
+
+./terradrift --repository https://github.com/username/reponame --git-token $GITHUB_AUTH_TOKEN --config ./config.yaml --extra-backend-vars GOOGLE_CREDENTIALS=$SERVICE_ACCOUNT_PATH
 ```
 It will start a local HTTP server on `http://localhost:8080`, where you can initiate terradrift calls HTTP request and passing stackname in the URL. 
 ```bash
