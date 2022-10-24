@@ -2,14 +2,23 @@ package stacks
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 
 	"github.com/rootsami/terradrift/pkg/config"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/hashicorp/terraform-exec/tfexec"
 )
+
+type DriftSum struct {
+	Drift   bool `json:"drift"`
+	Add     int  `json:"add"`
+	Change  int  `json:"change"`
+	Destroy int  `json:"destroy"`
+}
 
 // The main function for installing the exact version of the stack, initiate and run terraform plan
 func StackScan(name, workspace, configPath string, extraBackendVars map[string]string) (string, error) {
@@ -99,7 +108,6 @@ func stackPlan(workspace string, stack config.Stack, tf *tfexec.Terraform) (stri
 
 func showPlan(plan bool, planFile string, name string, tf *tfexec.Terraform) (string, error) {
 
-	var err error
 	if plan {
 
 		state, err := tf.ShowPlanFileRaw(context.Background(), planFile)
@@ -108,14 +116,32 @@ func showPlan(plan bool, planFile string, name string, tf *tfexec.Terraform) (st
 			return "", err
 		}
 
-		re := regexp.MustCompile("Plan:.*")
-		summary := re.FindString(state)
-		log.WithFields(log.Fields{"stack": name, "summary": summary}).Info("CHANGES DETECTED...")
-		return fmt.Sprintf("CHANGES DETECTED... %s", summary), err
+		rawSummary := driftCalculator(state)
+
+		jsonSummary, err := json.Marshal(rawSummary)
+		if err != nil {
+			log.WithFields(log.Fields{"stack": name}).Error(err)
+		}
+
+		log.WithFields(log.Fields{"stack": name}).Info(string(jsonSummary))
+		return (string(jsonSummary)), err
 
 	} else {
-		log.WithFields(log.Fields{"stack": name, "summary": "No changes. Infrastructure matches the configuration."}).Info("NO CHANGES...")
-		return "No changes. Infrastructure matches the configuration.", err
+
+		rawSummary := &DriftSum{
+			Drift:   false,
+			Add:     0,
+			Change:  0,
+			Destroy: 0,
+		}
+
+		jsonSummary, err := json.Marshal(rawSummary)
+		if err != nil {
+			log.WithFields(log.Fields{"stack": name}).Error(err)
+		}
+
+		log.WithFields(log.Fields{"stack": name}).Info(string(jsonSummary))
+		return (string(jsonSummary)), err
 	}
 
 }
@@ -130,4 +156,38 @@ func stackExists(name string, stacks []config.Stack) (stack config.Stack, result
 		}
 	}
 	return stack, result
+}
+
+// driftCalculator returns a detailed number of changes that was detected in the plan
+func driftCalculator(state string) DriftSum {
+
+	re := regexp.MustCompile("Plan:[^0-9]*(?P<add>[0-9])[^0-9]*(?P<change>[0-9])[^0-9]*(?P<destroy>[0-9])")
+	matches := re.FindStringSubmatch(state)
+
+	addIndex := re.SubexpIndex("add")
+	add, err := strconv.Atoi(matches[addIndex])
+	if err != nil {
+		log.Error(err)
+	}
+
+	changeIndex := re.SubexpIndex("change")
+	change, err := strconv.Atoi(matches[changeIndex])
+	if err != nil {
+		log.Error(err)
+	}
+
+	destroyIndex := re.SubexpIndex("destroy")
+	destroy, err := strconv.Atoi(matches[destroyIndex])
+	if err != nil {
+		log.Error(err)
+	}
+
+	DriftSum := &DriftSum{
+		Drift:   true,
+		Add:     add,
+		Change:  change,
+		Destroy: destroy,
+	}
+
+	return *DriftSum
 }
