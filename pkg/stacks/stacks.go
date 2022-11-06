@@ -3,7 +3,7 @@ package stacks
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"regexp"
 	"strconv"
 
@@ -44,13 +44,14 @@ func StackScan(name, workspace, configPath string, extraBackendVars map[string]s
 		response, err := stackPlan(workspace, stack, tf)
 		if err != nil {
 			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error(err)
+			return "", err
 		}
 
 		return response, err
 
 	} else {
 		log.WithFields(log.Fields{"stack": name}).Error("STACK WAS NOT FOUND")
-		err := fmt.Errorf("ERROR: STACK WAS NOT FOUND")
+		err := errors.New("ERROR: STACK WAS NOT FOUND")
 		return response, err
 	}
 
@@ -87,6 +88,7 @@ func stackPlan(workspace string, stack config.Stack, tf *tfexec.Terraform) (stri
 
 		response, err = showPlan(plan, planFile, stack.Name, tf)
 		if err != nil {
+			log.WithFields(log.Fields{"stack": stack.Name}).Errorf("Running show: %s", err)
 			return "", err
 		}
 
@@ -112,15 +114,17 @@ func showPlan(plan bool, planFile string, name string, tf *tfexec.Terraform) (st
 
 		state, err := tf.ShowPlanFileRaw(context.Background(), planFile)
 		if err != nil {
-			log.WithFields(log.Fields{"stack": name}).Errorf("Running show: %s", err)
 			return "", err
 		}
 
-		rawSummary := driftCalculator(state)
+		rawSummary, err := driftCalculator(state)
+		if err != nil {
+			return "", err
+		}
 
 		jsonSummary, err := json.Marshal(rawSummary)
 		if err != nil {
-			log.WithFields(log.Fields{"stack": name}).Error(err)
+			return "", err
 		}
 
 		log.WithFields(log.Fields{"stack": name}).Info(string(jsonSummary))
@@ -137,7 +141,7 @@ func showPlan(plan bool, planFile string, name string, tf *tfexec.Terraform) (st
 
 		jsonSummary, err := json.Marshal(rawSummary)
 		if err != nil {
-			log.WithFields(log.Fields{"stack": name}).Error(err)
+			return "", err
 		}
 
 		log.WithFields(log.Fields{"stack": name}).Info(string(jsonSummary))
@@ -159,7 +163,7 @@ func stackExists(name string, stacks []config.Stack) (stack config.Stack, result
 }
 
 // driftCalculator returns a detailed number of changes that was detected in the plan
-func driftCalculator(state string) DriftSum {
+func driftCalculator(state string) (DriftSum, error) {
 
 	re := regexp.MustCompile("Plan:[^0-9]*(?P<add>[0-9])[^0-9]*(?P<change>[0-9])[^0-9]*(?P<destroy>[0-9])")
 	matches := re.FindStringSubmatch(state)
@@ -167,19 +171,19 @@ func driftCalculator(state string) DriftSum {
 	addIndex := re.SubexpIndex("add")
 	add, err := strconv.Atoi(matches[addIndex])
 	if err != nil {
-		log.Error(err)
+		return DriftSum{}, err
 	}
 
 	changeIndex := re.SubexpIndex("change")
 	change, err := strconv.Atoi(matches[changeIndex])
 	if err != nil {
-		log.Error(err)
+		return DriftSum{}, err
 	}
 
 	destroyIndex := re.SubexpIndex("destroy")
 	destroy, err := strconv.Atoi(matches[destroyIndex])
 	if err != nil {
-		log.Error(err)
+		return DriftSum{}, err
 	}
 
 	DriftSum := &DriftSum{
@@ -189,5 +193,5 @@ func driftCalculator(state string) DriftSum {
 		Destroy: destroy,
 	}
 
-	return *DriftSum
+	return *DriftSum, err
 }

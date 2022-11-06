@@ -37,9 +37,10 @@ Flags:
   --help                   Show context-sensitive help (also try --help-long and --help-man).
   --hostname="localhost"   hostname that apil will be exposed.
   --port="8080"            port of the service api is listening on
-  --protocol="http"        The protocol of exposed endpoint http/https
+  --scheme="http"        The scheme of exposed endpoint http/https
   --repository=REPOSITORY  The git repository which include all terraform stacks
   --git-token=GIT-TOKEN    Personal access token to access git repositories
+  --git-timeout=120        Wait timeout for git repoistory to clone or pull updates
   --interval=60            The interval for scan scheduler
   --config="config.yaml"   Path for configuration file holding the stack information
   --extra-backend-vars=EXTRA-BACKEND-VARS ...  
@@ -50,14 +51,13 @@ Flags:
 It will start a local HTTP server on `http://localhost:8080`, where you can initiate terradrift calls HTTP request and passing stackname in the URL. 
 ```bash
 # curl http://localhost:8080/api/plan?stack=stack-one
-"CHANGES DETECTED... Plan: 1 to add, 0 to change, 0 to destroy."
+{"drift":true,"add":1,"change":0,"destroy":0}
 
 # curl http://localhost:8080/api/plan?stack=stack-three
-"No changes. Infrastructure matches the configuration."
+{"drift":false,"add":0,"change":0,"destroy":0}
 ```
 
 ## Roadmap
-This tool started as a fun project by Cumulus, but then it got INTERESTING! 🤩 
 
 - ~Scheduled runs for all defined stacks.~ Done
 - Once drift is detected, then what? For how long?

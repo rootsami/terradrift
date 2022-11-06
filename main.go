@@ -19,9 +19,10 @@ var (
 	app              = kingpin.New("terradrift", "A tool to detect drifts in terraform IaC")
 	hostname         = app.Flag("hostname", "hostname that apil will be exposed.").Default("localhost").String()
 	port             = app.Flag("port", "port of the service api is listening on").Default("8080").String()
-	protocol         = app.Flag("protocol", "The protocol of exposed endpoint http/https").Default("http").String()
+	scheme           = app.Flag("scheme", "The scheme of exposed endpoint http/https").Default("http").String()
 	repository       = app.Flag("repository", "The git repository which include all terraform stacks ").Required().String()
 	gitToken         = app.Flag("git-token", "Personal access token to access git repositories").Required().String()
+	gitTimeout       = app.Flag("git-timeout", "Wait timeout for git repoistory to clone or pull updates").Default("120").Int()
 	interval         = app.Flag("interval", "The interval for scan scheduler").Default("60").Int()
 	configPath       = app.Flag("config", "Path for configuration file holding the stack information").Default("config.yaml").String()
 	extraBackendVars = app.Flag("extra-backend-vars", "Extra backend environment variables ex. GOOGLE_CREDENTIALS OR AWS_ACCESS_KEY").StringMap()
@@ -46,25 +47,39 @@ func main() {
 
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	git.GitClone(workspace, *gitToken, *repository)
+	err := git.GitClone(workspace, *gitToken, *repository, *gitTimeout)
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	host := *scheme + "://" + *hostname + ":" + *port
 	route := gin.Default()
 	route.GET("/api/plan", scanHandler)
+	route.GET("/api/sync", gitHandler)
 
 	wg := sync.WaitGroup{}
 	wg.Add(3)
 	go func() {
-		route.Run(":" + *port)
+		err := route.Run(":" + *port)
+		if err != nil {
+			log.Fatal(err)
+		}
 		wg.Done()
 	}()
 
 	go func() {
-		schedulers.ScanScheduler(*hostname, *port, *protocol, *configPath, *interval)
+		err := schedulers.ScanScheduler(host, *configPath, *interval)
+		if err != nil {
+			log.Error(err)
+		}
 		wg.Done()
 	}()
 
 	go func() {
-		schedulers.PullScheduler(workspace, *gitToken, *interval)
+		err := schedulers.PullScheduler(host, *interval)
+		if err != nil {
+			log.Error(err)
+		}
 		wg.Done()
 	}()
 	wg.Wait()
@@ -94,5 +109,15 @@ func scanHandler(c *gin.Context) {
 
 			c.JSON(500, errorMessage)
 		}
+	}
+}
+
+func gitHandler(c *gin.Context) {
+
+	status, err := git.GitPull(workspace, *gitToken, *gitTimeout)
+	if err != nil {
+		c.JSON(500, err)
+	} else {
+		c.JSON(200, status)
 	}
 }
