@@ -30,7 +30,10 @@ func StackScan(name, workspace, configPath string, extraBackendVars map[string]s
 	if validStack {
 
 		// The path for terrafom binary
-		execPath := install(stack)
+		execPath, err := install(stack, workspace)
+		if err != nil {
+			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error(err)
+		}
 
 		tf, err := tfexec.NewTerraform(workspace+stack.Path, execPath)
 		if err != nil {
@@ -82,20 +85,17 @@ func stackPlan(workspace string, stack config.Stack, tf *tfexec.Terraform) (stri
 	if len(stack.TFvars) > 0 {
 		plan, err := tf.Plan(context.Background(), stackPlanFile, tfexec.VarFile(stack.TFvars))
 		if err != nil {
-			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error("Running Plan")
 			return "", err
 		}
 
 		response, err = showPlan(plan, planFile, stack.Name, tf)
 		if err != nil {
-			log.WithFields(log.Fields{"stack": stack.Name}).Errorf("Running show: %s", err)
 			return "", err
 		}
 
 	} else {
 		plan, err := tf.Plan(context.Background(), stackPlanFile)
 		if err != nil {
-			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error("Running Plan")
 			return "", err
 		}
 
