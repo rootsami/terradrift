@@ -8,10 +8,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/rootsami/terradrift/pkg/git"
+	"github.com/rootsami/terradrift/pkg/metric"
 	"github.com/rootsami/terradrift/pkg/schedulers"
 	"github.com/rootsami/terradrift/pkg/stacks"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -27,6 +30,7 @@ var (
 	configPath       = app.Flag("config", "Path for configuration file holding the stack information").Default("config.yaml").String()
 	extraBackendVars = app.Flag("extra-backend-vars", "Extra backend environment variables ex. GOOGLE_CREDENTIALS OR AWS_ACCESS_KEY").StringMap()
 	workspace        string
+	promMetrics      *metric.Metrics
 )
 
 func init() {
@@ -52,10 +56,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// Initialize a non-global prometheus registry
+	registery := prometheus.NewRegistry()
+	promMetrics = metric.NewMetrics(registery)
+
 	host := *scheme + "://" + *hostname + ":" + *port
 	route := gin.Default()
 	route.GET("/api/plan", scanHandler)
 	route.GET("/api/sync", gitHandler)
+	route.GET("/metrics", prometheusHandler(registery))
 
 	wg := sync.WaitGroup{}
 	wg.Add(3)
@@ -85,6 +94,8 @@ func main() {
 	wg.Wait()
 }
 
+// scanHandler is a handler function for scan endpoint and record metrics
+// for changed resources based on the scan plan result
 func scanHandler(c *gin.Context) {
 
 	name := c.Query("stack")
@@ -92,7 +103,13 @@ func scanHandler(c *gin.Context) {
 
 	if err == nil {
 
+		// Record metrics for drifts in resources
+		promMetrics.AddResources.With(prometheus.Labels{"stack": name}).Set(float64(planResp.Add))
+		promMetrics.ChangeResources.With(prometheus.Labels{"stack": name}).Set(float64(planResp.Change))
+		promMetrics.DestroyResources.With(prometheus.Labels{"stack": name}).Set(float64(planResp.Destroy))
+
 		c.JSON(200, planResp)
+
 	} else {
 
 		errorMessage := error.Error(err)
@@ -112,6 +129,7 @@ func scanHandler(c *gin.Context) {
 	}
 }
 
+// gitHandler is a handler function for git sync endpoint
 func gitHandler(c *gin.Context) {
 
 	status, err := git.GitPull(workspace, *gitToken, *gitTimeout)
@@ -119,5 +137,14 @@ func gitHandler(c *gin.Context) {
 		c.JSON(500, err)
 	} else {
 		c.JSON(200, status)
+	}
+}
+
+// prometheusHandler returns a gin.HandlerFunc that serves prometheus metrics.
+func prometheusHandler(reg *prometheus.Registry) gin.HandlerFunc {
+	h := promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg})
+
+	return func(c *gin.Context) {
+		h.ServeHTTP(c.Writer, c.Request)
 	}
 }

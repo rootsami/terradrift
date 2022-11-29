@@ -13,11 +13,9 @@ example:
 ```yaml
 stacks:
   - name: stack-one
-    version: 1.0.6
     path: gcp/stack-one
 
   - name: stack-three
-    version: 1.2.5
     path: gcp/stack-multi
     tfvars: environments/three.tfvars
     backend: environments/three.hcl
