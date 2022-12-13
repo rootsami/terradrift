@@ -29,9 +29,9 @@ func PullScheduler(host string, interval int) error {
 	return nil
 }
 
-func ScanScheduler(host, configPath string, interval int) error {
+func ScanScheduler(host, worksapce, configPath string, interval int) error {
 
-	stacks, err := config.ConfigLoader(configPath)
+	stacks, err := config.ConfigLoader(worksapce, configPath)
 	if err != nil {
 		log.Fatalf("Error loading config file: %s", err)
 	}

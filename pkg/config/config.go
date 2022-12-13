@@ -2,12 +2,13 @@ package config
 
 import (
 	"io/ioutil"
+	"os"
 
 	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
-	Stacks []Stack `yaml:"stacks"`
+	Stacks []Stack `yaml:"stacks" json:"stacks"`
 }
 
 type Stack struct {
@@ -17,11 +18,10 @@ type Stack struct {
 	Backend string `yaml:"backend,omitempty" json:"backend,omitempty"`
 }
 
-func ConfigLoader(path string) (*Config, error) {
+// ConfigLoader loads the configuration file and returns a Config struct
+func ConfigLoader(workspace, configPath string) (*Config, error) {
 
-	// Loading configuration file for repository and stack properties
-	// TODO: config validator
-	stackConfig, err := ioutil.ReadFile(path)
+	stackConfig, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		return nil, err
 	}
@@ -32,5 +32,26 @@ func ConfigLoader(path string) (*Config, error) {
 		return nil, err
 	}
 
+	err = ConfigValidator(workspace, &config)
+
 	return &config, err
+}
+
+// ConfigValidator validates the configuration file and returns an error if TFvars or Backend file does not exist
+func ConfigValidator(workspace string, cfg *Config) error {
+	for _, stack := range cfg.Stacks {
+		if stack.TFvars != "" {
+			tfvarPath := workspace + stack.Path + "/" + stack.TFvars
+			if _, err := os.Stat(tfvarPath); os.IsNotExist(err) {
+				return err
+			}
+		}
+		if stack.Backend != "" {
+			backendPath := workspace + stack.Path + "/" + stack.Backend
+			if _, err := os.Stat(backendPath); os.IsNotExist(err) {
+				return err
+			}
+		}
+	}
+	return nil
 }

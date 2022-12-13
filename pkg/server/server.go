@@ -66,7 +66,7 @@ func (s Server) Start() error {
 	}()
 
 	go func() {
-		err := schedulers.ScanScheduler(host, s.ConfigPath, s.Interval)
+		err := schedulers.ScanScheduler(host, s.Workspace, s.ConfigPath, s.Interval)
 		if err != nil {
 			log.Error(err)
 		}

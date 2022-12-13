@@ -32,7 +32,7 @@ type DriftSum struct {
 // initializing the stack.
 func StackScan(name, workspace, configPath string, extraBackendVars map[string]string) (*DriftSum, error) {
 
-	config, err := config.ConfigLoader(configPath)
+	config, err := config.ConfigLoader(workspace, configPath)
 	if err != nil {
 		return nil, err
 	}

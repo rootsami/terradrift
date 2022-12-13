@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/olekukonko/tablewriter"
 	"github.com/rootsami/terradrift/pkg/config"
 	"github.com/rootsami/terradrift/pkg/stacks"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
@@ -21,7 +24,7 @@ var (
 	configPath       = app.Flag("config", "Path for configuration file holding the stack information").String()
 	extraBackendVars = app.Flag("extra-backend-vars", "Extra backend environment variables ex. GOOGLE_CREDENTIALS OR AWS_ACCESS_KEY").StringMap()
 	debug            = app.Flag("debug", "Enable debug mode").Default("false").Bool()
-	ConfigGenerator  = app.Flag("generate-config-only", "Generate a config file with based on a provided worksapce").Default("false").Bool()
+	generateConfig   = app.Flag("generate-config-only", "Generate a config file with based on a provided worksapce").Default("false").Bool()
 	output           = app.Flag("output", "Output format supported: json, yaml and table").Default("table").Enum("table", "json", "yaml")
 )
 
@@ -43,7 +46,16 @@ func main() {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	if !strings.HasSuffix(*workspace, "/") {
+	// if worksapce path is not absolute, make it absolute and add a trailing slash
+	if !path.IsAbs(*workspace) {
+		absPath, err := filepath.Abs(*workspace)
+		if err != nil {
+			log.Fatalf("Error getting absolute path for workspace: %s", err)
+		}
+
+		*workspace = absPath + "/"
+
+	} else if !strings.HasSuffix(*workspace, "/") {
 		*workspace = *workspace + "/"
 	}
 
@@ -56,7 +68,7 @@ func main() {
 	if *configPath != "" {
 
 		log.WithFields(log.Fields{"config": *configPath}).Debug("Loading config file")
-		cfg, err := config.ConfigLoader(*configPath)
+		cfg, err := config.ConfigLoader(*workspace, *configPath)
 		if err != nil {
 			log.Fatalf("Error loading config file: %s", err)
 		}
@@ -75,17 +87,17 @@ func main() {
 
 		stackList = cfg.Stacks
 
-	}
+		// if generate-config-only flag is provided, print the generated config file and exit
+		if *generateConfig {
+			yamlConfig, err := yaml.Marshal(&cfg)
+			if err != nil {
+				log.Error("Error while marshaling. %v", err)
+			}
 
-	// if generate-config-only flag is provided, print the generated config file and exit
-	if *ConfigGenerator {
-		yamlData, err := yaml.Marshal(&cfg)
-		if err != nil {
-			fmt.Printf("Error while marshaling. %v", err)
+			fmt.Print(string(yamlConfig))
+			os.Exit(0)
 		}
 
-		fmt.Print(string(yamlData))
-		os.Exit(0)
 	}
 
 	for _, stack := range stackList {
@@ -104,16 +116,6 @@ func main() {
 			log.Error(err)
 		}
 
-		tableRow := []string{cfg.Name,
-			strconv.FormatBool(response.Drift),
-			strconv.Itoa(response.Add),
-			strconv.Itoa(response.Change),
-			strconv.Itoa(response.Destroy),
-			cfg.Path,
-			tfver,
-		}
-		table = append(table, tableRow)
-
 		stackOutputs = append(stackOutputs, stackOutput{
 			Name:    cfg.Name,
 			Path:    cfg.Path,
@@ -123,6 +125,16 @@ func main() {
 			Destroy: response.Destroy,
 			TFver:   tfver,
 		})
+
+		tableRow := []string{cfg.Name,
+			strconv.FormatBool(response.Drift),
+			strconv.Itoa(response.Add),
+			strconv.Itoa(response.Change),
+			strconv.Itoa(response.Destroy),
+			cfg.Path,
+			tfver,
+		}
+		table = append(table, tableRow)
 
 	}
 
@@ -140,7 +152,27 @@ func main() {
 		}
 		fmt.Print(string(o))
 	case "table":
-		config.TablePrinter(table, []string{"STACK-NAME", "DRIFT", "ADD", "CHANGE", "DESTROY", "PATH", "TF-VERSION"})
+		tablePrinter(table, []string{"STACK-NAME", "DRIFT", "ADD", "CHANGE", "DESTROY", "PATH", "TF-VERSION"})
 
 	}
+}
+
+func tablePrinter(data [][]string, columns []string) {
+
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader(columns)
+	table.SetAutoWrapText(false)
+	table.SetAutoFormatHeaders(true)
+	table.SetHeaderAlignment(3)
+	table.SetAlignment(3)
+	table.SetCenterSeparator("")
+	table.SetColumnSeparator("")
+	table.SetRowSeparator("")
+	table.SetHeaderLine(false)
+	table.SetBorder(false)
+	table.SetTablePadding("\t") // pad with tabs
+	table.SetNoWhiteSpace(true)
+	table.AppendBulk(data) // Add Bulk Data
+	table.Render()
+
 }
