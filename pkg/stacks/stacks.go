@@ -2,8 +2,8 @@ package stacks
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
+	"fmt"
 	"regexp"
 	"strconv"
 
@@ -20,62 +20,83 @@ type DriftSum struct {
 	Destroy int  `json:"destroy"`
 }
 
-// The main function for installing the exact version of the stack, initiate and run terraform plan
-func StackScan(name, workspace, configPath string, extraBackendVars map[string]string) (string, error) {
+// StackScan scans a given stack only if stack exist in the list of stacks in the config file
+// and returns a DriftSum that describes the drift between the stack's Terraform state
+// and the state of its resources.
+//
+// name is the name of the stack to scan.
+// workspace is the workspace of the stack to scan.
+// configPath is the path to the config of the stacks to scan.
+// extraBackendVars is a map of extra variables to pass to the backend when
+// initializing the stack.
+func StackScan(name, workspace, configPath string, extraBackendVars map[string]string) (*DriftSum, error) {
 
-	var response string
 	config := config.ConfigLoader(configPath)
 
 	stack, validStack := stackExists(name, config.Stacks)
 	if validStack {
 
-		// The path for terrafom binary
-		execPath, err := install(stack, workspace)
+		response, err := StackInit(workspace, stack, extraBackendVars)
 		if err != nil {
-			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error(err)
+			log.WithFields(log.Fields{"stack": stack.Name}).Error(err)
+			return nil, err
 		}
-
-		tf, err := tfexec.NewTerraform(workspace+stack.Path, execPath)
-		if err != nil {
-			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Errorf("Running NewTerraform: %s", err)
-			return "", err
-		}
-
-		tfenv := setupEnv(stack.Name, extraBackendVars)
-		tf.SetEnv(tfenv)
-
-		response, err := stackPlan(workspace, stack, tf)
-		if err != nil {
-			log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error(err)
-			return "", err
-		}
-
-		return response, err
+		log.WithFields(log.Fields{"stack": stack.Name}).Info(fmt.Sprintf("%+v", *response))
+		return response, nil
 
 	} else {
-		log.WithFields(log.Fields{"stack": name}).Error("STACK WAS NOT FOUND")
 		err := errors.New("ERROR: STACK WAS NOT FOUND")
-		return response, err
+		log.WithFields(log.Fields{"stack": name}).Error(err)
+		return nil, err
 	}
+}
+
+// StackInit initializes a stack and returns a DriftSum that describes the drift details
+func StackInit(workspace string, stack config.Stack, extraBackendVars map[string]string) (*DriftSum, error) {
+
+	// The path for terrafom binary
+	execPath, err := install(stack, workspace)
+	if err != nil {
+		log.WithFields(log.Fields{"stack": stack.Name}).Error(err)
+	}
+
+	tf, err := tfexec.NewTerraform(workspace+stack.Path, execPath)
+	if err != nil {
+		log.WithFields(log.Fields{"stack": stack.Name}).Errorf("Running NewTerraform: %s", err)
+		return nil, err
+	}
+
+	tfenv := setupEnv(stack.Name, extraBackendVars)
+	tf.SetEnv(tfenv)
+
+	response, err := stackPlan(workspace, stack, tf)
+	if err != nil {
+		log.WithFields(log.Fields{"stack": stack.Name}).Error(err)
+		return nil, err
+	}
+
+	return response, nil
 
 }
 
-// StackPlan is separated to be called indivisually to avoid downloading/installing terraform binaries of the same version.
-// Initializing is part of the plan incase new modules added/upgraded to the stack code
-func stackPlan(workspace string, stack config.Stack, tf *tfexec.Terraform) (string, error) {
+// stackPlan executes terraform plan for a given stack and returns a
+// DriftSum. The DriftSum is used to determine if any resources have drifted
+// from the Terraform state.
+func stackPlan(workspace string, stack config.Stack, tf *tfexec.Terraform) (*DriftSum, error) {
 
-	var response string
+	var response *DriftSum
 
 	// Stacks come with two different structures:
-	// 1. All resources for multiple stacks (environments) exist in one directory and backend initialization is done with environments/<name>.hcl
+	// 1. All resources for multiple stacks (environments) exist in one directory
+	//    and backend initialization is done with path/to/backend.hcl
 	// 2. Regular stack where all resources, tfvars and backend configs are in the same directory
 
-	log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Info("Initializing Terraform...")
+	log.WithFields(log.Fields{"stack": stack.Name}).Info("Initializing Terraform...")
 
 	err := tf.Init(context.Background(), tfexec.Upgrade(false), tfexec.BackendConfig(stack.Backend))
 	if err != nil {
-		log.WithFields(log.Fields{"stack": stack.Name, "version": stack.Version}).Error("Running Init")
-		return "", err
+		log.WithFields(log.Fields{"stack": stack.Name}).Error("Running Init")
+		return nil, err
 	}
 
 	// Create TF Plan options
@@ -85,67 +106,56 @@ func stackPlan(workspace string, stack config.Stack, tf *tfexec.Terraform) (stri
 	if len(stack.TFvars) > 0 {
 		plan, err := tf.Plan(context.Background(), stackPlanFile, tfexec.VarFile(stack.TFvars))
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		response, err = showPlan(plan, planFile, stack.Name, tf)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 	} else {
 		plan, err := tf.Plan(context.Background(), stackPlanFile)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		response, err = showPlan(plan, planFile, stack.Name, tf)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 
 	return response, err
 }
 
-func showPlan(plan bool, planFile string, name string, tf *tfexec.Terraform) (string, error) {
+// showPlan shows the plan and returns the number of changes
+func showPlan(plan bool, planFile string, name string, tf *tfexec.Terraform) (*DriftSum, error) {
 
 	if plan {
 
 		state, err := tf.ShowPlanFileRaw(context.Background(), planFile)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
-		rawSummary, err := driftCalculator(state)
+		summary, err := driftCalculator(state)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
-		jsonSummary, err := json.Marshal(rawSummary)
-		if err != nil {
-			return "", err
-		}
-
-		log.WithFields(log.Fields{"stack": name}).Info(string(jsonSummary))
-		return (string(jsonSummary)), err
+		return summary, nil
 
 	} else {
 
-		rawSummary := &DriftSum{
+		summary := &DriftSum{
 			Drift:   false,
 			Add:     0,
 			Change:  0,
 			Destroy: 0,
 		}
 
-		jsonSummary, err := json.Marshal(rawSummary)
-		if err != nil {
-			return "", err
-		}
-
-		log.WithFields(log.Fields{"stack": name}).Info(string(jsonSummary))
-		return (string(jsonSummary)), err
+		return summary, nil
 	}
 
 }
@@ -163,7 +173,7 @@ func stackExists(name string, stacks []config.Stack) (stack config.Stack, result
 }
 
 // driftCalculator returns a detailed number of changes that was detected in the plan
-func driftCalculator(state string) (DriftSum, error) {
+func driftCalculator(state string) (*DriftSum, error) {
 
 	re := regexp.MustCompile("Plan:[^0-9]*(?P<add>[0-9])[^0-9]*(?P<change>[0-9])[^0-9]*(?P<destroy>[0-9])")
 	matches := re.FindStringSubmatch(state)
@@ -171,19 +181,19 @@ func driftCalculator(state string) (DriftSum, error) {
 	addIndex := re.SubexpIndex("add")
 	add, err := strconv.Atoi(matches[addIndex])
 	if err != nil {
-		return DriftSum{}, err
+		return nil, err
 	}
 
 	changeIndex := re.SubexpIndex("change")
 	change, err := strconv.Atoi(matches[changeIndex])
 	if err != nil {
-		return DriftSum{}, err
+		return nil, err
 	}
 
 	destroyIndex := re.SubexpIndex("destroy")
 	destroy, err := strconv.Atoi(matches[destroyIndex])
 	if err != nil {
-		return DriftSum{}, err
+		return nil, err
 	}
 
 	DriftSum := &DriftSum{
@@ -193,5 +203,5 @@ func driftCalculator(state string) (DriftSum, error) {
 		Destroy: destroy,
 	}
 
-	return *DriftSum, err
+	return DriftSum, err
 }
