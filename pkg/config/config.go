@@ -3,8 +3,6 @@ package config
 import (
 	"io/ioutil"
 
-	log "github.com/sirupsen/logrus"
-
 	"gopkg.in/yaml.v2"
 )
 
@@ -13,26 +11,26 @@ type Config struct {
 }
 
 type Stack struct {
-	Name    string `yaml:"name"`
-	Version string `yaml:"version"`
-	Path    string `yaml:"path"`
-	TFvars  string `yaml:"tfvars"`
-	Backend string `yaml:"backend"`
+	Name    string `yaml:"name" json:"name"`
+	Path    string `yaml:"path" json:"path"`
+	TFvars  string `yaml:"tfvars,omitempty" json:"tfvars,omitempty"`
+	Backend string `yaml:"backend,omitempty" json:"backend,omitempty"`
 }
 
-func ConfigLoader(path string) Config {
+func ConfigLoader(path string) (*Config, error) {
 
 	// Loading configuration file for repository and stack properties
 	// TODO: config validator
 	stackConfig, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	var config Config
 	err = yaml.Unmarshal(stackConfig, &config)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	return config
+
+	return &config, err
 }

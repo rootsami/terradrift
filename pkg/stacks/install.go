@@ -16,11 +16,12 @@ import (
 )
 
 // install should recieve a terraform version and return the execution path
-func install(stack config.Stack, workspace string) (string, error) {
+func install(stack config.Stack, workspace string) (string, string, error) {
 
 	v, err := detectTFVersion(workspace + stack.Path)
 	if err != nil {
-		return "", err
+		log.WithField("stack", stack.Name).Debug("Terraform version not defined in the stack")
+		return "", "", err
 	}
 
 	// To make sure returned value doesn't include '>='
@@ -37,19 +38,19 @@ func install(stack config.Stack, workspace string) (string, error) {
 			InstallDir: execPathDir,
 		}
 
-		log.WithFields(log.Fields{"stack": stack.Name, "version": tfver}).Info("Installing Terraform...")
+		log.WithFields(log.Fields{"stack": stack.Name, "version": tfver}).Debug("Downloading Terraform...")
 
 		execPath, err := installer.Install(context.Background())
 		if err != nil {
-			return "", err
+			return "", "", err
 		}
-		return execPath, nil
+		return execPath, tfver, nil
 
 	} else {
 
-		log.WithFields(log.Fields{"stack": stack.Name, "version": tfver}).Info("Skipping download, Terraform binary found...")
+		log.WithFields(log.Fields{"stack": stack.Name, "version": tfver}).Debug("Skipping download, Terraform binary found...")
 
-		return execPath, nil
+		return execPath, tfver, nil
 	}
 
 }
@@ -61,6 +62,12 @@ func detectTFVersion(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	// Check if terraform version is defined in the module
+	if len(module.RequiredCore) == 0 {
+		return "", err
+	}
+
 	tfversion := module.RequiredCore[0]
 
 	return tfversion, nil
