@@ -7,7 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rootsami/terradrift/pkg/git"
-	"github.com/rootsami/terradrift/pkg/stacks"
+	"github.com/rootsami/terradrift/pkg/tfstack"
 )
 
 // scanHandler is a handler function for scan endpoint and record metrics
@@ -15,7 +15,7 @@ import (
 func (s Server) scanHandler(c *gin.Context) {
 
 	name := c.Query("stack")
-	planResp, err := stacks.StackScan(name, s.Workspace, s.ConfigPath, s.ExtraBackendVars)
+	planResp, err := tfstack.StackScan(name, s.Workspace, s.ConfigPath, s.ExtraBackendVars)
 
 	if err == nil {
 

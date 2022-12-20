@@ -12,7 +12,7 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/rootsami/terradrift/pkg/config"
-	"github.com/rootsami/terradrift/pkg/stacks"
+	"github.com/rootsami/terradrift/pkg/tfstack"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 	"gopkg.in/yaml.v2"
 
@@ -111,7 +111,7 @@ func main() {
 				}
 			}()
 
-			response, tfver, err := stacks.StackInit(*workspace, s, *extraBackendVars)
+			response, tfver, err := tfstack.StackInit(*workspace, s, *extraBackendVars)
 			if err != nil {
 				log.WithFields(log.Fields{"stack": s.Name}).Error(err)
 			}

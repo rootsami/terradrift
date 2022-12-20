@@ -9,11 +9,9 @@ terradrift-cli is a command line tool that can be used to detect drifts in terra
 
 ```bash
 
-git clone https://github.com/rootsami/terradrift.git
-
-cd terradrift/terradrift-cli
-
-go build -o terradrift-cli
+$ git clone https://github.com/rootsami/terradrift.git
+$ cd terradrift/terradrift-cli
+$ go build -o terradrift-cli
 
 ```
 
@@ -23,9 +21,9 @@ Download the binary from the [releases]()
 
 ## Usage
 it can be used in multiple scenarios:
-- Without a config file, where you only need to provide the workspace and it will discover any directory that has tf stack.
+- Without a config file, where you only need to provide the workspace and it will discover any directory that has tf tfstack.
 - With a config file, where you can define the stacks and their configurations in the config file. ex. name, path, tfvars, etc.
-- Only to generate a config file based on a provided workspace. where it will try to generate the name and path and wheather the stack has tfvars file or not as it will consider each tfvars file as another stack.
+- Only to generate a config file based on a provided workspace. where it will try to generate the name and path and wheather the stack has tfvars file or not as it will consider each tfvars file as another tfstack.
 
 ```bash
 
