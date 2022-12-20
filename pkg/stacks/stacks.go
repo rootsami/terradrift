@@ -75,7 +75,6 @@ func StackInit(workspace string, stack config.Stack, extraBackendVars map[string
 
 	response, err := stackPlan(workspace, stack, tf)
 	if err != nil {
-		log.WithFields(log.Fields{"stack": stack.Name}).Error(err)
 		return nil, "", err
 	}
 
@@ -107,6 +106,7 @@ func stackPlan(workspace string, stack config.Stack, tf *tfexec.Terraform) (*Dri
 	planFile := workspace + stack.Path + "/" + stack.Name + ".plan"
 	stackPlanFile := tfexec.Out(planFile)
 
+	log.WithFields(log.Fields{"stack": stack.Name}).Debug("Running terraform plan...")
 	if len(stack.TFvars) > 0 {
 		plan, err := tf.Plan(context.Background(), stackPlanFile, tfexec.VarFile(stack.TFvars))
 		if err != nil {

@@ -25,17 +25,17 @@ stacks:
 After setting up the configs in the above section
 ```bash
 # go build .
-./terradrift --help
+./terradrift-server --help
 
-usage: terradrift --repository=REPOSITORY --git-token=GIT-TOKEN [<flags>]
+usage: terradrift-server --repository=REPOSITORY --git-token=GIT-TOKEN [<flags>]
 
-A tool to detect drifts in terraform IaC
+A tool to detect drifts in terraform IaC, As a server mode it will expose a rest api to query the drifts and also as prometheus metrics on /metrics endpoint
 
 Flags:
   --help                   Show context-sensitive help (also try --help-long and --help-man).
   --hostname="localhost"   hostname that apil will be exposed.
   --port="8080"            port of the service api is listening on
-  --scheme="http"        The scheme of exposed endpoint http/https
+  --scheme="http"          The scheme of exposed endpoint http/https
   --repository=REPOSITORY  The git repository which include all terraform stacks
   --git-token=GIT-TOKEN    Personal access token to access git repositories
   --git-timeout=120        Wait timeout for git repoistory to clone or pull updates
@@ -43,8 +43,8 @@ Flags:
   --config="config.yaml"   Path for configuration file holding the stack information
   --extra-backend-vars=EXTRA-BACKEND-VARS ...  
                            Extra backend environment variables ex. GOOGLE_CREDENTIALS OR AWS_ACCESS_KEY
-
-./terradrift --repository https://github.com/username/reponame --git-token $GITHUB_AUTH_TOKEN --config ./config.yaml --extra-backend-vars GOOGLE_CREDENTIALS=$SERVICE_ACCOUNT_PATH
+  --debug                  Enable debug mode
+./terradrift-server --repository https://github.com/username/reponame --git-token $GITHUB_AUTH_TOKEN --config ./config.yaml --extra-backend-vars GOOGLE_CREDENTIALS=$SERVICE_ACCOUNT_PATH
 ```
 It will start a local HTTP server on `http://localhost:8080`, where you can initiate terradrift calls HTTP request and passing stackname in the URL. 
 ```bash
@@ -56,10 +56,7 @@ It will start a local HTTP server on `http://localhost:8080`, where you can init
 ```
 
 ## Roadmap
-
-- ~Scheduled runs for all defined stacks.~ Done
-- Once drift is detected, then what? For how long?
-- ~Optimizations: No download/install for each run. it has to be once.~ Done
+- [ ] Add support for multiple repositories
 
 
 ## Contributing

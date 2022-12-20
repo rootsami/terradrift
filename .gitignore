@@ -20,3 +20,10 @@ workspace
 
 # IDEs
 .vscode
+
+# Terraform and terradrift
+**/.terradrift*
+**/.terraform/*
+
+# .tfstate files
+**/*tfstate*

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/rootsami/terradrift/pkg/config"
@@ -19,12 +20,12 @@ import (
 )
 
 var (
-	app              = kingpin.New("terradrift", "A tool to detect drifts in terraform IaC")
+	app              = kingpin.New("terradrift-cli", "A tool to detect drifts in terraform IaC")
 	workspace        = app.Flag("workspace", "workspace of a project that contains all terraform directories").Default("./").String()
 	configPath       = app.Flag("config", "Path for configuration file holding the stack information").String()
 	extraBackendVars = app.Flag("extra-backend-vars", "Extra backend environment variables ex. GOOGLE_CREDENTIALS OR AWS_ACCESS_KEY").StringMap()
 	debug            = app.Flag("debug", "Enable debug mode").Default("false").Bool()
-	generateConfig   = app.Flag("generate-config-only", "Generate a config file with based on a provided worksapce").Default("false").Bool()
+	generateConfig   = app.Flag("generate-config-only", "Generate a config file based on a provided worksapce").Default("false").Bool()
 	output           = app.Flag("output", "Output format supported: json, yaml and table").Default("table").Enum("table", "json", "yaml")
 )
 
@@ -38,7 +39,7 @@ type stackOutput struct {
 	TFver   string `json:"tfver" yaml:"tfver"`
 }
 
-func main() {
+func init() {
 
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
@@ -58,106 +59,105 @@ func main() {
 	} else if !strings.HasSuffix(*workspace, "/") {
 		*workspace = *workspace + "/"
 	}
+}
 
-	var table [][]string
-	var stackList []config.Stack
+func main() {
+
 	var cfg *config.Config
 	var stackOutputs []stackOutput
+	var err error
 
-	// if config file is provided, load it and assign it to stackList
-	if *configPath != "" {
-
+	switch {
+	// if config file is provided, load it and assign it to cfg
+	case *configPath != "":
 		log.WithFields(log.Fields{"config": *configPath}).Debug("Loading config file")
-		cfg, err := config.ConfigLoader(*workspace, *configPath)
+		cfg, err = config.ConfigLoader(*workspace, *configPath)
 		if err != nil {
 			log.Fatalf("Error loading config file: %s", err)
 		}
-		stackList = cfg.Stacks
 
-	} else {
+	// if --generate-config-only flag is provided, generate config file to stdout and exit
+	case *generateConfig:
+		cfg, err = config.ConfigGenerator(*workspace)
+		if err != nil {
+			log.Fatalf("Error generating config file: %s", err)
+		}
 
-		var err error
-		// if config file is not provided, find all directories that contain .tf files
-		// and create a stack for each directory
+		outputWriter(cfg, "yaml")
+		os.Exit(0)
+
+	// if config file is not provided, generate it and assign it to cfg
+	case *configPath == "":
+
 		log.Debug("Config file not found, running stack init on each directory that contains .tf files")
 		cfg, err = config.ConfigGenerator(*workspace)
 		if err != nil {
-			log.Warnf("Error generating config file: %s", err)
+			log.Fatalf("Error generating config file: %s", err)
 		}
 
-		stackList = cfg.Stacks
+	}
 
-		// if generate-config-only flag is provided, print the generated config file and exit
-		if *generateConfig {
-			yamlConfig, err := yaml.Marshal(&cfg)
+	var wg sync.WaitGroup
+	for _, stack := range cfg.Stacks {
+
+		wg.Add(1)
+		go func(s config.Stack) {
+			defer wg.Done()
+
+			// catch panic and log it as error to continue to the next stack
+			defer func() {
+				if r := recover(); r != nil {
+					log.WithFields(log.Fields{"stack": s.Name}).Error(r)
+				}
+			}()
+
+			response, tfver, err := stacks.StackInit(*workspace, s, *extraBackendVars)
 			if err != nil {
-				log.Error("Error while marshaling. %v", err)
+				log.WithFields(log.Fields{"stack": s.Name}).Error(err)
 			}
 
-			fmt.Print(string(yamlConfig))
-			os.Exit(0)
-		}
+			stackOutputs = append(stackOutputs, stackOutput{
+				Name:    s.Name,
+				Path:    s.Path,
+				Drift:   response.Drift,
+				Add:     response.Add,
+				Change:  response.Change,
+				Destroy: response.Destroy,
+				TFver:   tfver,
+			})
+		}(stack)
 
 	}
+	wg.Wait()
 
-	for _, stack := range stackList {
-
-		// if configPath is not provided, create a config file with default values
-		// create a config file with default values
-		cfg := config.Stack{
-			Name:    stack.Name,
-			Path:    stack.Path,
-			TFvars:  stack.TFvars,
-			Backend: stack.Backend,
-		}
-
-		response, tfver, err := stacks.StackInit(*workspace, cfg, *extraBackendVars)
-		if err != nil {
-			log.Error(err)
-		}
-
-		stackOutputs = append(stackOutputs, stackOutput{
-			Name:    cfg.Name,
-			Path:    cfg.Path,
-			Drift:   response.Drift,
-			Add:     response.Add,
-			Change:  response.Change,
-			Destroy: response.Destroy,
-			TFver:   tfver,
-		})
-
-		tableRow := []string{cfg.Name,
-			strconv.FormatBool(response.Drift),
-			strconv.Itoa(response.Add),
-			strconv.Itoa(response.Change),
-			strconv.Itoa(response.Destroy),
-			cfg.Path,
-			tfver,
-		}
-		table = append(table, tableRow)
-
-	}
-
+	// output the results based on the output flag
 	switch *output {
 	case "json":
-		o, err := json.Marshal(stackOutputs)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Print(string(o))
+		outputWriter(stackOutputs, "json")
 	case "yaml":
-		o, err := yaml.Marshal(stackOutputs)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Print(string(o))
+		outputWriter(stackOutputs, "yaml")
 	case "table":
-		tablePrinter(table, []string{"STACK-NAME", "DRIFT", "ADD", "CHANGE", "DESTROY", "PATH", "TF-VERSION"})
+		tableWriter(stackOutputs)
 
 	}
 }
 
-func tablePrinter(data [][]string, columns []string) {
+func tableWriter(stackOutputs []stackOutput) {
+
+	columns := []string{"STACK-NAME", "DRIFT", "ADD", "CHANGE", "DESTROY", "PATH", "TF-VERSION"}
+	var data [][]string
+
+	for _, stackOutput := range stackOutputs {
+		row := []string{stackOutput.Name,
+			strconv.FormatBool(stackOutput.Drift),
+			strconv.Itoa(stackOutput.Add),
+			strconv.Itoa(stackOutput.Change),
+			strconv.Itoa(stackOutput.Destroy),
+			stackOutput.Path,
+			stackOutput.TFver,
+		}
+		data = append(data, row)
+	}
 
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader(columns)
@@ -174,5 +174,25 @@ func tablePrinter(data [][]string, columns []string) {
 	table.SetNoWhiteSpace(true)
 	table.AppendBulk(data) // Add Bulk Data
 	table.Render()
+
+}
+
+// outputWriter takes a data interface and a format string and outputs the data in the specified format
+func outputWriter(data interface{}, format string) {
+
+	switch format {
+	case "json":
+		o, err := json.Marshal(data)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Print(string(o))
+	case "yaml":
+		o, err := yaml.Marshal(data)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Print(string(o))
+	}
 
 }

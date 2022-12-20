@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	app              = kingpin.New("terradrift", "A tool to detect drifts in terraform IaC")
+	app              = kingpin.New("terradrift-server", "A tool to detect drifts in terraform IaC, As a server mode it will expose a rest api to query the drifts and also as prometheus metrics on /metrics endpoint")
 	hostname         = app.Flag("hostname", "hostname that apil will be exposed.").Default("localhost").String()
 	port             = app.Flag("port", "port of the service api is listening on").Default("8080").String()
 	scheme           = app.Flag("scheme", "The scheme of exposed endpoint http/https").Default("http").String()
