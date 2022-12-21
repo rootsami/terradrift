@@ -28,8 +28,9 @@ func install(stack config.Stack, workspace string) (string, string, error) {
 		return "", "", err
 	}
 
-	// To make sure returned value doesn't include '>='
-	tfver := regexp.MustCompile(`[^a-zA-Z0-9. ]+`).ReplaceAllString(v, "")
+	// To make sure returned value doesn't include '>=' or '~>' or any other characters that are not part of the version
+	re := regexp.MustCompile(`[0-9]+.[0-9]+.[0-9]+`)
+	tfver := re.FindString(v)
 
 	execPathDir := os.TempDir() + tfver
 	execPath, err := downloadBinary(execPathDir, tfver)

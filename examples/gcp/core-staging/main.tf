@@ -29,5 +29,5 @@ resource "null_resource" "echo_apply_here" {
 }
 
 terraform {
-  required_version = "1.0.6"
+  required_version = ">= 1.0.6"
 }
