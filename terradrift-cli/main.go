@@ -21,7 +21,7 @@ import (
 
 var (
 	app              = kingpin.New("terradrift-cli", "A command-line tool to detect drifts in terraform IaC")
-	workspace        = app.Flag("workspace", "workspace of a project that contains all terraform directories").Default("./").String()
+	workdir          = app.Flag("workdir", "workdir of a project that contains all terraform directories").Default("./").String()
 	configPath       = app.Flag("config", "Path for configuration file holding the stack information").String()
 	extraBackendVars = app.Flag("extra-backend-vars", "Extra backend environment variables ex. GOOGLE_CREDENTIALS, AWS_ACCESS_KEY or AWS_SECRET_KEY").StringMap()
 	debug            = app.Flag("debug", "Enable debug mode").Default("false").Bool()
@@ -48,16 +48,16 @@ func init() {
 	}
 
 	// if worksapce path is not absolute, make it absolute and add a trailing slash
-	if !path.IsAbs(*workspace) {
-		absPath, err := filepath.Abs(*workspace)
+	if !path.IsAbs(*workdir) {
+		absPath, err := filepath.Abs(*workdir)
 		if err != nil {
-			log.Fatalf("Error getting absolute path for workspace: %s", err)
+			log.Fatalf("Error getting absolute path for workdir: %s", err)
 		}
 
-		*workspace = absPath + "/"
+		*workdir = absPath + "/"
 
-	} else if !strings.HasSuffix(*workspace, "/") {
-		*workspace = *workspace + "/"
+	} else if !strings.HasSuffix(*workdir, "/") {
+		*workdir = *workdir + "/"
 	}
 }
 
@@ -71,14 +71,14 @@ func main() {
 	// if config file is provided, load it and assign it to cfg
 	case *configPath != "":
 		log.WithFields(log.Fields{"config": *configPath}).Debug("Loading config file")
-		cfg, err = config.ConfigLoader(*workspace, *configPath)
+		cfg, err = config.ConfigLoader(*workdir, *configPath)
 		if err != nil {
 			log.Fatalf("Error loading config file: %s", err)
 		}
 
 	// if --generate-config-only flag is provided, generate config file to stdout and exit
 	case *generateConfig:
-		cfg, err = config.ConfigGenerator(*workspace)
+		cfg, err = config.ConfigGenerator(*workdir)
 		if err != nil {
 			log.Fatalf("Error generating config file: %s", err)
 		}
@@ -90,7 +90,7 @@ func main() {
 	case *configPath == "":
 
 		log.Debug("Config file not found, running stack init on each directory that contains .tf files")
-		cfg, err = config.ConfigGenerator(*workspace)
+		cfg, err = config.ConfigGenerator(*workdir)
 		if err != nil {
 			log.Fatalf("Error generating config file: %s", err)
 		}
@@ -111,7 +111,7 @@ func main() {
 				}
 			}()
 
-			response, tfver, err := tfstack.StackInit(*workspace, s, *extraBackendVars)
+			response, tfver, err := tfstack.StackInit(*workdir, s, *extraBackendVars)
 			if err != nil {
 				log.WithFields(log.Fields{"stack": s.Name}).Error(err)
 			}

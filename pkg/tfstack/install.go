@@ -19,10 +19,10 @@ import (
 var mutexes = make(map[string]*sync.Mutex) // map of mutexes, one per stack path
 
 // install should recieve a terraform version and return the execution path
-func install(stack config.Stack, workspace string) (string, string, error) {
+func install(stack config.Stack, workdir string) (string, string, error) {
 
 	// Check if terraform version is defined in the stack files
-	v, err := detectTFVersion(workspace + stack.Path)
+	v, err := detectTFVersion(workdir + stack.Path)
 	if err != nil {
 		log.WithField("stack", stack.Name).Debug("Terraform version not defined in the stack")
 		return "", "", err

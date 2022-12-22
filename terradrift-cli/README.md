@@ -1,6 +1,6 @@
 # terradrift-cli
 
-terradrift-cli is a command line tool that can be used to detect drifts in terraform IaC. It discovers the stacks from the given workspace and then runs the `terraform plan` command to detect the drifts based on the plan output. The output format by default is table, however it can be changed to json or yaml by passing the `--output` flag.
+terradrift-cli is a command line tool that can be used to detect drifts in terraform IaC. It discovers the stacks from the given workdir and then runs the `terraform plan` command to detect the drifts based on the plan output. The output format by default is table, however it can be changed to json or yaml by passing the `--output` flag.
 
 
 ## Installation
@@ -21,9 +21,9 @@ Download the binary from the [releases]()
 
 ## Usage
 it can be used in multiple scenarios:
-- Without a config file, where you only need to provide the workspace and it will discover any directory that has tf tfstack.
+- Without a config file, where you only need to provide the workdir and it will discover any directory that has tf tfstack.
 - With a config file, where you can define the stacks and their configurations in the config file. ex. name, path, tfvars, etc.
-- Only to generate a config file based on a provided workspace. where it will try to generate the name and path and wheather the stack has tfvars file or not as it will consider each tfvars file as another tfstack.
+- Only to generate a config file based on a provided workdir. where it will try to generate the name and path and wheather the stack has tfvars file or not as it will consider each tfvars file as another tfstack.
 
 ```bash
 
@@ -33,7 +33,7 @@ A command-line tool to detect drifts in terraform IaC
 
 Flags:
   --help                  Show context-sensitive help (also try --help-long and --help-man).
-  --workspace="./"        workspace of a project that contains all terraform directories
+  --workdir="./"        workdir of a project that contains all terraform directories
   --config=CONFIG         Path for configuration file holding the stack information
   --extra-backend-vars=EXTRA-BACKEND-VARS ...  
                           Extra backend environment variables ex. GOOGLE_CREDENTIALS, AWS_ACCESS_KEY or AWS_SECRET_KEY
@@ -49,7 +49,7 @@ Flags:
 
 ```bash
 
-$ terradrift-cli --workspace ./examples/ --config examples/config.yaml        
+$ terradrift-cli --workdir ./examples/ --config examples/config.yaml        
 STACK-NAME      DRIFT   ADD     CHANGE  DESTROY PATH                    TF-VERSION 
 api-production  false   0       0       0       gcp/api                 1.2.7     
 api-staging     false   0       0       0       gcp/api                 1.2.7     
@@ -59,11 +59,11 @@ core-staging    true    1       0       0       gcp/core-staging        1.0.6
 ```
 
 ### Run terradrift-cli to generate config file only
-`--generate-config-only` flag can be used to generate a config file based on the provided workspace. The generated config file can be used to run terradrift-cli or terradrift-server also to hand pick the stacks to be scanned.
+`--generate-config-only` flag can be used to generate a config file based on the provided workdir. The generated config file can be used to run terradrift-cli or terradrift-server also to hand pick the stacks to be scanned.
 
 ```bash
 
-$ terradrift-cli --workspace ./ --generate-config-only
+$ terradrift-cli --workdir ./ --generate-config-only
 
 stacks:
 - name: aws-core-production
@@ -86,7 +86,7 @@ stacks:
 
 ```bash
 
-$ terradrift-cli --workspace ./ --extra-backend-vars GOOGLE_CREDENTIALS=$SERVICE_ACCOUNT_PATH --output json
+$ terradrift-cli --workdir ./ --extra-backend-vars GOOGLE_CREDENTIALS=$SERVICE_ACCOUNT_PATH --output json
 [
   {
     "name": "examples-gcp-api-environments-staging",

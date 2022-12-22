@@ -22,7 +22,7 @@ var (
 	configPath       = app.Flag("config", "Path for configuration file holding the stack information").Default("config.yaml").String()
 	extraBackendVars = app.Flag("extra-backend-vars", "Extra backend environment variables ex. GOOGLE_CREDENTIALS, AWS_ACCESS_KEY or AWS_SECRET_KEY").StringMap()
 	debug            = app.Flag("debug", "Enable debug mode").Default("false").Bool()
-	workspace        string
+	workdir          string
 )
 
 func init() {
@@ -30,7 +30,7 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	workspace = dir + "/"
+	workdir = dir + "/"
 
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
@@ -44,7 +44,7 @@ func main() {
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	args := server.Server{
-		Workspace:        workspace,
+		Workdir:          workdir,
 		GitToken:         *gitToken,
 		GitTimeout:       *gitTimeout,
 		ConfigPath:       *configPath,

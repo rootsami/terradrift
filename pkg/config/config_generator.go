@@ -9,18 +9,18 @@ import (
 )
 
 // ConfigGenerator creates a stack for each directory that contains .tf files
-func ConfigGenerator(workspace string) (*Config, error) {
+func ConfigGenerator(workdir string) (*Config, error) {
 
 	var stacks []Stack
 	var stack Stack
-	cfgPaths := findStack(workspace, ".tf")
+	cfgPaths := findStack(workdir, ".tf")
 
 	for _, path := range cfgPaths {
 
 		// if the directory contains .tfvars files, create a stack for each .tfvars file
-		if len(findStack(workspace+path, ".tfvars")) > 0 {
+		if len(findStack(workdir+path, ".tfvars")) > 0 {
 
-			for _, subStack := range findStack(workspace+path, ".tfvars") {
+			for _, subStack := range findStack(workdir+path, ".tfvars") {
 				// remove the .tfvars extension and replace / with - to create a stack name
 				name := strings.TrimSuffix(strings.ReplaceAll(path+"-"+subStack, "/", "-"), ".tfvars")
 				stack = Stack{
@@ -51,12 +51,12 @@ func ConfigGenerator(workspace string) (*Config, error) {
 	return &cfg, nil
 }
 
-// findStack discover all directories in the workspace that contains files with .tf extension and returns a list of stacks
+// findStack discover all directories in the workdir that contains files with .tf extension and returns a list of stacks
 // if the extension is .tfvars, it returns a list of .tfvars files to determine how many stacks are in the same directory
-func findStack(workspace, ext string) []string {
+func findStack(workdir, ext string) []string {
 
 	var list []string
-	filepath.WalkDir(workspace, func(s string, f fs.DirEntry, err error) error {
+	filepath.WalkDir(workdir, func(s string, f fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -66,14 +66,14 @@ func findStack(workspace, ext string) []string {
 			switch ext {
 			case ".tf":
 				f := filepath.Dir(s)
-				d := f[len(workspace):]
+				d := f[len(workdir):]
 
 				// Append the directory path to the list and eliminate duplicates
 				if !slices.Contains(list, d) {
 					list = append(list, d)
 				}
 			case ".tfvars":
-				d := s[len(workspace):]
+				d := s[len(workdir):]
 				d = strings.Trim(d, "/")
 
 				if !slices.Contains(list, d) {

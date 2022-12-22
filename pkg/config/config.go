@@ -19,7 +19,7 @@ type Stack struct {
 }
 
 // ConfigLoader loads the configuration file and returns a Config struct
-func ConfigLoader(workspace, configPath string) (*Config, error) {
+func ConfigLoader(workdir, configPath string) (*Config, error) {
 
 	stackConfig, err := ioutil.ReadFile(configPath)
 	if err != nil {
@@ -32,22 +32,22 @@ func ConfigLoader(workspace, configPath string) (*Config, error) {
 		return nil, err
 	}
 
-	err = ConfigValidator(workspace, &config)
+	err = ConfigValidator(workdir, &config)
 
 	return &config, err
 }
 
 // ConfigValidator validates the configuration file and returns an error if TFvars or Backend file does not exist
-func ConfigValidator(workspace string, cfg *Config) error {
+func ConfigValidator(workdir string, cfg *Config) error {
 	for _, stack := range cfg.Stacks {
 		if stack.TFvars != "" {
-			tfvarPath := workspace + stack.Path + "/" + stack.TFvars
+			tfvarPath := workdir + stack.Path + "/" + stack.TFvars
 			if _, err := os.Stat(tfvarPath); os.IsNotExist(err) {
 				return err
 			}
 		}
 		if stack.Backend != "" {
-			backendPath := workspace + stack.Path + "/" + stack.Backend
+			backendPath := workdir + stack.Path + "/" + stack.Backend
 			if _, err := os.Stat(backendPath); os.IsNotExist(err) {
 				return err
 			}

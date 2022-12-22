@@ -15,7 +15,7 @@ import (
 func (s Server) scanHandler(c *gin.Context) {
 
 	name := c.Query("stack")
-	planResp, err := tfstack.StackScan(name, s.Workspace, s.ConfigPath, s.ExtraBackendVars)
+	planResp, err := tfstack.StackScan(name, s.Workdir, s.ConfigPath, s.ExtraBackendVars)
 
 	if err == nil {
 
@@ -48,7 +48,7 @@ func (s Server) scanHandler(c *gin.Context) {
 // gitHandler is a handler function for git sync endpoint
 func (s Server) gitHandler(c *gin.Context) {
 
-	status, err := git.GitPull(s.Workspace, s.GitToken, s.GitTimeout)
+	status, err := git.GitPull(s.Workdir, s.GitToken, s.GitTimeout)
 	if err != nil {
 		c.JSON(500, err)
 	} else {

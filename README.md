@@ -6,7 +6,7 @@ As we’re adding/modifying infrastructure pieces, sometimes we encounter a few 
 Some of these changes have been done for testing purposes and then forgotten, or have been sitting there for a longer period that the responsible team has lost the track of it.
 
 # How it works?
-Terradrift has two modes, CLI and Server. Both modes will scan all terraform stacks (directories) in a given workspace and run terraform plan to detect the drifts. The difference between the two modes is that the CLI mode will run the scan once and exit, while the Server mode will run the scan continuously based on a defined schedule and expose a rest api to query the drifts. It also exposes the drift results as prometheus metrics on /metrics endpoint.
+Terradrift has two modes, CLI and Server. Both modes will scan all terraform stacks (directories) in a given workdir and run terraform plan to detect the drifts. The difference between the two modes is that the CLI mode will run the scan once and exit, while the Server mode will run the scan continuously based on a defined schedule and expose a rest api to query the drifts. It also exposes the drift results as prometheus metrics on /metrics endpoint.
 
 ## Server mode (terradrift-server)
 
