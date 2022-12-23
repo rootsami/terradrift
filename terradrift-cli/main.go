@@ -70,7 +70,7 @@ func main() {
 	switch {
 	// if config file is provided, load it and assign it to cfg
 	case *configPath != "":
-		log.WithFields(log.Fields{"config": *configPath}).Debug("Loading config file")
+		log.WithFields(log.Fields{"config": *configPath}).Debug("loading config file")
 		cfg, err = config.ConfigLoader(*workdir, *configPath)
 		if err != nil {
 			log.Fatalf("Error loading config file: %s", err)
@@ -89,10 +89,10 @@ func main() {
 	// if config file is not provided, generate it and assign it to cfg
 	case *configPath == "":
 
-		log.Debug("Config file not found, running stack init on each directory that contains .tf files")
+		log.Debug("config file not found, running stack init on each directory that contains .tf files")
 		cfg, err = config.ConfigGenerator(*workdir)
 		if err != nil {
-			log.Fatalf("Error generating config file: %s", err)
+			log.Fatalf("error generating config file: %s", err)
 		}
 
 	}

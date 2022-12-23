@@ -24,7 +24,7 @@ func install(stack config.Stack, workdir string) (string, string, error) {
 	// Check if terraform version is defined in the stack files
 	v, err := detectTFVersion(workdir + stack.Path)
 	if err != nil {
-		log.WithField("stack", stack.Name).Debug("Terraform version not defined in the stack")
+		log.WithField("stack", stack.Name).Debug("terraform version not defined in the stack")
 		return "", "", err
 	}
 
@@ -79,7 +79,7 @@ func downloadBinary(dir, tfver string) (string, error) {
 
 	// Check if binary already exists in the specified temp directory
 	if _, err := os.Stat(execPath); !errors.Is(err, os.ErrNotExist) {
-		log.WithFields(log.Fields{"version": tfver}).Debug("Skipping download, Terraform binary found...")
+		log.WithFields(log.Fields{"version": tfver}).Debug("skipping download, terraform binary found...")
 
 		return execPath, nil
 
@@ -92,7 +92,7 @@ func downloadBinary(dir, tfver string) (string, error) {
 			InstallDir: dir,
 		}
 
-		log.WithFields(log.Fields{"version": tfver}).Debug("Downloading Terraform...")
+		log.WithFields(log.Fields{"version": tfver}).Debug("downloading Terraform...")
 
 		execPath, err := installer.Install(context.Background())
 		if err != nil {

@@ -29,7 +29,7 @@ func (s Server) scanHandler(c *gin.Context) {
 	} else {
 
 		errorMessage := error.Error(err)
-		if errorMessage == "ERROR: STACK WAS NOT FOUND" {
+		if errorMessage == "stack was not found" {
 
 			// Given stack name was not found in the configuration
 			c.JSON(404, errorMessage)

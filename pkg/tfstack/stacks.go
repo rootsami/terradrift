@@ -49,7 +49,7 @@ func StackScan(name, workdir, configPath string, extraBackendVars map[string]str
 		return response, nil
 
 	} else {
-		err := errors.New("ERROR: STACK WAS NOT FOUND")
+		err := errors.New("stack was not found")
 		log.WithFields(log.Fields{"stack": name}).Error(err)
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func StackInit(workdir string, stack config.Stack, extraBackendVars map[string]s
 
 	tf, err := tfexec.NewTerraform(workdir+stack.Path, execPath)
 	if err != nil {
-		log.WithFields(log.Fields{"stack": stack.Name}).Errorf("Running NewTerraform: %s", err)
+		log.WithFields(log.Fields{"stack": stack.Name}).Errorf("running NewTerraform: %s", err)
 		return nil, "", err
 	}
 
@@ -94,11 +94,11 @@ func stackPlan(workdir string, stack config.Stack, tf *tfexec.Terraform) (*Drift
 	//    and backend initialization is done with path/to/backend.hcl
 	// 2. Regular stack where all resources, tfvars and backend configs are in the same directory
 
-	log.WithFields(log.Fields{"stack": stack.Name}).Debug("Initializing Terraform...")
+	log.WithFields(log.Fields{"stack": stack.Name}).Debug("initializing terraform...")
 
 	err := tf.Init(context.Background(), tfexec.Upgrade(false), tfexec.BackendConfig(stack.Backend))
 	if err != nil {
-		log.WithFields(log.Fields{"stack": stack.Name}).Error("Running Init")
+		log.WithFields(log.Fields{"stack": stack.Name}).Error("running init")
 		return nil, err
 	}
 
@@ -106,7 +106,7 @@ func stackPlan(workdir string, stack config.Stack, tf *tfexec.Terraform) (*Drift
 	planFile := workdir + stack.Path + "/" + stack.Name + ".plan"
 	stackPlanFile := tfexec.Out(planFile)
 
-	log.WithFields(log.Fields{"stack": stack.Name}).Debug("Running terraform plan...")
+	log.WithFields(log.Fields{"stack": stack.Name}).Debug("running terraform plan...")
 	if len(stack.TFvars) > 0 {
 		plan, err := tf.Plan(context.Background(), stackPlanFile, tfexec.VarFile(stack.TFvars))
 		if err != nil {

@@ -33,7 +33,7 @@ func ScanScheduler(host, worksapce, configPath string, interval int) error {
 
 	stacks, err := config.ConfigLoader(worksapce, configPath)
 	if err != nil {
-		log.Fatalf("Error loading config file: %s", err)
+		log.Fatalf("error loading config file: %s", err)
 	}
 
 	for _, s := range stacks.Stacks {
