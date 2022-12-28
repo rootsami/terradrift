@@ -23,6 +23,7 @@ var (
 	extraBackendVars = app.Flag("extra-backend-vars", "Extra backend environment variables ex. GOOGLE_CREDENTIALS, AWS_ACCESS_KEY or AWS_SECRET_KEY").StringMap()
 	debug            = app.Flag("debug", "Enable debug mode").Default("false").Bool()
 	workdir          string
+	version          string
 )
 
 func init() {
@@ -41,6 +42,7 @@ func init() {
 
 func main() {
 
+	app.Version(version)
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	args := server.Server{

@@ -27,6 +27,7 @@ var (
 	debug            = app.Flag("debug", "Enable debug mode").Default("false").Bool()
 	generateConfig   = app.Flag("generate-config-only", "Generate a config file based on a provided worksapce").Default("false").Bool()
 	output           = app.Flag("output", "Output format supported: json, yaml and table").Default("table").Enum("table", "json", "yaml")
+	version          string
 )
 
 type stackOutput struct {
@@ -41,6 +42,7 @@ type stackOutput struct {
 
 func init() {
 
+	app.Version(version)
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	if *debug {
