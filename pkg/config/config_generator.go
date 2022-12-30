@@ -2,6 +2,7 @@ package config
 
 import (
 	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -74,6 +75,11 @@ func findStack(workdir, ext string) []string {
 				}
 			case ".tfvars":
 				d := s[len(workdir):]
+				// set max depth of 1 in case of tfvars are in a subdirectory
+				// which create an issue by duplicating stacks for tfvars of a subdirectory that doesn't belong to it
+				if strings.Count(d, string(os.PathSeparator)) > 2 {
+					return fs.SkipDir
+				}
 				d = strings.Trim(d, "/")
 
 				if !slices.Contains(list, d) {
