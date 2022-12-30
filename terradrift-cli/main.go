@@ -23,7 +23,7 @@ var (
 	app              = kingpin.New("terradrift-cli", "A command-line tool to detect drifts in terraform IaC")
 	workdir          = app.Flag("workdir", "workdir of a project that contains all terraform directories").Default("./").String()
 	configPath       = app.Flag("config", "Path for configuration file holding the stack information").String()
-	extraBackendVars = app.Flag("extra-backend-vars", "Extra backend environment variables ex. GOOGLE_CREDENTIALS, AWS_ACCESS_KEY or AWS_SECRET_KEY").StringMap()
+	extraBackendVars = app.Flag("extra-backend-vars", "Extra backend environment variables ex. GOOGLE_CREDENTIALS, AWS_ACCESS_KEY_ID or AWS_CONFIG_FILE ..etc").StringMap()
 	debug            = app.Flag("debug", "Enable debug mode").Default("false").Bool()
 	generateConfig   = app.Flag("generate-config-only", "Generate a config file based on a provided worksapce").Default("false").Bool()
 	output           = app.Flag("output", "Output format supported: json, yaml and table").Default("table").Enum("table", "json", "yaml")

@@ -29,7 +29,8 @@ func install(stack config.Stack, workdir string) (string, string, error) {
 	}
 
 	// To make sure returned value doesn't include '>=' or '~>' or any other characters that are not part of the version
-	re := regexp.MustCompile(`[0-9]+.[0-9]+.[0-9]+`)
+	// and to make sure the version is in the format x.y.z or x.y
+	re := regexp.MustCompile(`[0-9]+.[0-9]+.[0-9]+|[0-9]+.[0-9]+`)
 	tfver := re.FindString(v)
 
 	execPathDir := os.TempDir() + tfver

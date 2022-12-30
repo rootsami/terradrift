@@ -17,8 +17,27 @@ func setupEnv(stackName string, extraBackendVars map[string]string) (tfenv map[s
 	// rename .terraform directory to .terradrift.{stackName} for easy detection and cleanup
 
 	tfEnvVars := map[string]string{
+		// obtain PATH from the environment
+		"PATH": os.Getenv("PATH"),
+
+		// Terraform
 		"TF_DATA_DIR": ".terradrift." + stackName,
-		"PATH":        os.Getenv("PATH"),
+
+		// AWS
+		// https://registry.terraform.io/providers/hashicorp/aws/latest/docs#environment-variables
+		"AWS_ACCESS_KEY_ID":           os.Getenv("AWS_ACCESS_KEY_ID"),
+		"AWS_SECRET_ACCESS_KEY":       os.Getenv("AWS_SECRET_ACCESS_KEY"),
+		"AWS_SESSION_TOKEN":           os.Getenv("AWS_SESSION_TOKEN"),
+		"AWS_PROFILE":                 os.Getenv("AWS_PROFILE"),
+		"AWS_CONFIG_FILE":             os.Getenv("AWS_CONFIG_FILE"),
+		"AWS_SHARED_CREDENTIALS_FILE": os.Getenv("AWS_SHARED_CREDENTIALS_FILE"),
+
+		// GCP
+		// https://registry.terraform.io/providers/hashicorp/google/latest/docs/guides/provider_reference#full-reference
+		"GOOGLE_APPLICATION_CREDENTIALS": os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"),
+		"GOOGLE_CREDENTIALS":             os.Getenv("GOOGLE_CREDENTIALS"),
+		"GOOGLE_CLOUD_KEYFILE_JSON":      os.Getenv("GOOGLE_CLOUD_KEYFILE_JSON"),
+		"GCLOUD_KEYFILE_JSON":            os.Getenv("GCLOUD_KEYFILE_JSON"),
 	}
 
 	// User provided environment variables

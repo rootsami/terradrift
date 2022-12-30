@@ -20,7 +20,7 @@ var (
 	gitTimeout       = app.Flag("git-timeout", "Wait timeout for git repoistory to clone or pull updates").Default("120").Int()
 	interval         = app.Flag("interval", "The interval for scan scheduler").Default("60").Int()
 	configPath       = app.Flag("config", "Path for configuration file holding the stack information").Default("config.yaml").String()
-	extraBackendVars = app.Flag("extra-backend-vars", "Extra backend environment variables ex. GOOGLE_CREDENTIALS, AWS_ACCESS_KEY or AWS_SECRET_KEY").StringMap()
+	extraBackendVars = app.Flag("extra-backend-vars", "Extra backend environment variables ex. GOOGLE_CREDENTIALS, AWS_ACCESS_KEY_ID or AWS_CONFIG_FILE ..etc").StringMap()
 	debug            = app.Flag("debug", "Enable debug mode").Default("false").Bool()
 	workdir          string
 	version          string
