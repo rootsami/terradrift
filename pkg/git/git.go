@@ -11,12 +11,12 @@ import (
 )
 
 // cloning the repository that contains all terraform stacks
-func GitClone(workspace, token, repoUrl string, timeout int) error {
+func GitClone(workdir, token, repoUrl string, timeout int) error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
-	log.Infof("Cloning repository %s", repoUrl)
-	_, err := git.PlainCloneContext(ctx, workspace, false, &git.CloneOptions{
+	log.Infof("cloning repository %s", repoUrl)
+	_, err := git.PlainCloneContext(ctx, workdir, false, &git.CloneOptions{
 
 		Auth: &http.BasicAuth{
 			Username: "-", // Yes, this can be anything except an empty string
@@ -32,21 +32,21 @@ func GitClone(workspace, token, repoUrl string, timeout int) error {
 	return nil
 }
 
-func GitPull(workspace, token string, timeout int) (string, error) {
+func GitPull(workdir, token string, timeout int) (string, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
-	log.Info("Pulling latest updates from upstream")
+	log.Info("pulling latest updates from upstream")
 
-	r, err := git.PlainOpen(workspace)
+	r, err := git.PlainOpen(workdir)
 	if err != nil {
-		log.Errorf("ERROR: PULL FAILED %s", err)
+		log.Errorf("pull failed %s", err)
 		return "", err
 	}
 
 	w, err := r.Worktree()
 	if err != nil {
-		log.Errorf("ERROR: PULL FAILED %s", err)
+		log.Errorf("pull failed %s", err)
 		return "", err
 	}
 
@@ -59,15 +59,15 @@ func GitPull(workspace, token string, timeout int) (string, error) {
 	})
 
 	if err == git.NoErrAlreadyUpToDate {
-		log.Infof("Pulling latest updates: %s", err)
+		log.Infof("pulling latest updates: %s", err)
 		return error.Error(err), nil
 
 	} else if err != nil {
-		log.Errorf("ERROR: PULL FAILED %s", err)
+		log.Errorf("pull failed %s", err)
 		return "", err
 
 	} else {
-		log.Info("Pulling latest updates: Success!")
+		log.Info("pulling latest updates: Success!")
 		return "Success!", nil
 	}
 }

@@ -14,9 +14,20 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
-# Go workspace file
+# Go workdir file
 go.work
-workspace
+workdir
 
 # IDEs
 .vscode
+
+# Terraform and terradrift
+**/.terradrift*
+**/.terraform/*
+
+# .tfstate files
+**/*tfstate*
+
+# binaries for terradrift
+terradrift-cli/terradrift-cli
+terradrift-server/terradrift-server

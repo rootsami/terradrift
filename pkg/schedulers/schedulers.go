@@ -29,10 +29,14 @@ func PullScheduler(host string, interval int) error {
 	return nil
 }
 
-func ScanScheduler(host, configPath string, interval int) error {
+func ScanScheduler(host, worksapce, configPath string, interval int) error {
 
-	stacks := config.ConfigLoader(configPath).Stacks
-	for _, s := range stacks {
+	stacks, err := config.ConfigLoader(worksapce, configPath)
+	if err != nil {
+		log.Fatalf("error loading config file: %s", err)
+	}
+
+	for _, s := range stacks.Stacks {
 
 		url := host + "/api/plan?stack=" + s.Name
 		job := gocron.NewScheduler(time.UTC)

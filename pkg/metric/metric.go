@@ -17,17 +17,17 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 		AddResources: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "terradrift",
 			Name:      "plan_add_resources",
-			Help:      "Number of resource to be added based on tf plan",
+			Help:      "Number of resources to be added based on tf plan",
 		}, []string{"stack"}),
 		ChangeResources: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "terradrift",
 			Name:      "plan_change_resources",
-			Help:      "Number of resource to be changed based on tf plan",
+			Help:      "Number of resources to be changed based on tf plan",
 		}, []string{"stack"}),
 		DestroyResources: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Namespace: "terradrift",
 			Name:      "plan_destroy_resources",
-			Help:      "Number of resource to be destroyd based on tf plan",
+			Help:      "Number of resources to be destroyed based on tf plan",
 		}, []string{"stack"}),
 	}
 	reg.MustRegister(m.AddResources)
