@@ -127,9 +127,3 @@ $ terradrift-cli --workdir ./ --extra-backend-vars GOOGLE_CREDENTIALS=$SERVICE_A
 ]
 
 ```
-
-## Contributing
-
-
-
-## License
