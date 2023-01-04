@@ -1,6 +1,20 @@
 project_name: terradrift
 builds:
-  - env: [CGO_ENABLED=0]
+  - id: terradrift-server
+    main: ./terradrift-server
+    binary: terradrift-server
+    env: [CGO_ENABLED=0]
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+  - id: terradrift-cli
+    main: ./terradrift-cli
+    binary: terradrift-cli
+    env: [CGO_ENABLED=0]
     goos:
       - linux
       - windows
