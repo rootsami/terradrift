@@ -29,5 +29,4 @@ workdir
 **/*tfstate*
 
 # binaries for terradrift
-terradrift-cli/terradrift-cli
-terradrift-server/terradrift-server
+bins/*
