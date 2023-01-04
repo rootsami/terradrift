@@ -28,6 +28,7 @@ dockers:
   - "docker.io/rootsami/terradrift:latest"
   dockerfile: Dockerfile
   build_flag_templates:
+  - --build-arg=VERSION={{ .Version }}
   - --label=org.opencontainers.image.title={{ .ProjectName }}
   - --label=org.opencontainers.image.description={{ .ProjectName }}
   - --label=org.opencontainers.image.url=https://github.com/rootsami/terradrift
