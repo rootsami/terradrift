@@ -1,0 +1,6 @@
+FROM scratch
+
+COPY terradrift-cli /bin/terradrift-cli
+COPY terradrift-server /bin/terradrift-server
+
+ENTRYPOINT ["/bin/terradrift-server"]
