@@ -1,4 +1,5 @@
-# terradrift
+![terradrift-logo](https://user-images.githubusercontent.com/5733568/210888175-0b6d9e2a-e5fe-4e17-bf14-b6096705223a.png)
+
 A tool that will navigate through all terraform directories (stacks) to run terraform plan to detect the current drift between the committed code and applied infrastructure.
 
 As we’re adding/modifying infrastructure pieces, sometimes we encounter a few terraform stacks (directory) that are drifting from the current infrastructure. That’s mainly caused by changes done manually or resources deleted as they’re no longer needed without any track on our code base. 
