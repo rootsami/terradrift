@@ -30,3 +30,4 @@ workdir
 
 # binaries for terradrift
 bins/*
+dist/*

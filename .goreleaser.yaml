@@ -1,9 +1,21 @@
 project_name: terradrift
 builds:
-  - env: [CGO_ENABLED=0]
+  - id: terradrift-server
+    main: ./terradrift-server
+    binary: terradrift-server
+    env: [CGO_ENABLED=0]
     goos:
       - linux
-      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+  - id: terradrift-cli
+    main: ./terradrift-cli
+    binary: terradrift-cli
+    env: [CGO_ENABLED=0]
+    goos:
+      - linux
       - darwin
     goarch:
       - amd64
@@ -12,8 +24,9 @@ dockers:
 - image_templates: 
   - "docker.io/rootsami/terradrift:{{ .Version }}"
   - "docker.io/rootsami/terradrift:latest"
-  dockerfile: Dockerfile
+  dockerfile: Dockerfile.goreleaser
   build_flag_templates:
+  - --build-arg=VERSION={{ .Version }}
   - --label=org.opencontainers.image.title={{ .ProjectName }}
   - --label=org.opencontainers.image.description={{ .ProjectName }}
   - --label=org.opencontainers.image.url=https://github.com/rootsami/terradrift
