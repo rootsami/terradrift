@@ -52,7 +52,7 @@ Flags:
 ## Examples
 ```bash
 $ ./terradrift-server --repository https://github.com/username/reponame \
---git-token $GITHUB_AUTH_TOKEN \
+--git-token $GITHUB_TOKEN \
 --config ./config.yaml \
 --extra-backend-vars GOOGLE_CREDENTIALS=$SERVICE_ACCOUNT_PATH \
 --interval 600 \

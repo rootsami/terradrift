@@ -1,0 +1,18 @@
+## compose.yml for terradrift, it should pass flags to the running container and envrionment variable
+version: '3.7'
+services:
+  terradrift:
+    image: rootsami/terradrift:latest
+    ## Below are examples of environment variables to authenticate with GCP and AWS, uncomment and add your own values
+    # environment:
+      # - GOOGLE_APPLICATION_CREDENTIALS=/var/secrets/gcloud/application_default_credentials.json
+      # - AWS_CONFIG_FILE=/var/secrets/config
+    env_file:
+      - .env
+    command: --repository ${REPOISTORY} --git-token ${GIT_TOKEN} --config ${CONFIG_FILE} --interval ${INTERVAL} --debug
+    ## example mouting GCP or AWS credentials to the container, uncomment and add your own path.
+    # volumes:
+      # - /path/to/.config/gcloud:/var/secrets/gcloud
+      # - /path/to/.aws:/var/secrets/aws
+    ports:
+      - 8080:8080
