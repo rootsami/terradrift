@@ -1,0 +1,8 @@
+{{- $fullName := include "terradrift.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $fullName }}-stacks-config
+data:
+  config.yaml: |
+    {{- toYaml .Values.server.config | nindent 4 }}
