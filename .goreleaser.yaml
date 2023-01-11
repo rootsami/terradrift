@@ -27,20 +27,22 @@ dockers:
     build_flag_templates:
       - --platform=linux/amd64
     image_templates:
-      - rootsami/{{ .ProjectName }}:{{ .Tag }}-amd64
+      - rootsami/{{ .ProjectName }}:{{ .Version }}-amd64
+    use: buildx
   - goos: linux
     goarch: arm64
     dockerfile: Dockerfile.goreleaser
     build_flag_templates:
       - --platform=linux/arm64
     image_templates:
-      - rootsami/{{ .ProjectName }}:{{ .Tag }}-arm64
+      - rootsami/{{ .ProjectName }}:{{ .Version }}-arm64
+    use: buildx
 docker_manifests:
-- name_template: rootsami/{{ .ProjectName }}:{{ .Tag }}
+- name_template: rootsami/{{ .ProjectName }}:{{ .Version }}
   image_templates:
-    - rootsami/{{ .ProjectName }}:{{ .Tag }}-amd64
-    - rootsami/{{ .ProjectName }}:{{ .Tag }}-arm64
+    - rootsami/{{ .ProjectName }}:{{ .Version }}-amd64
+    - rootsami/{{ .ProjectName }}:{{ .Version }}-arm64
 - name_template: rootsami/{{ .ProjectName }}:latest
   image_templates:
-    - rootsami/{{ .ProjectName }}:{{ .Tag }}-amd64
-    - rootsami/{{ .ProjectName }}:{{ .Tag }}-arm64
+    - rootsami/{{ .ProjectName }}:{{ .Version }}-amd64
+    - rootsami/{{ .ProjectName }}:{{ .Version }}-arm64

@@ -55,7 +55,23 @@ You might also need to mount extra volumes to the container in order to be able 
 
 ### Scraping metrics
 If you are using Prometheus Operator, you can scrape the metrics by enabling the serviceMonitor.
-Alternatively, you can add the necessary static scrape configs to your Prometheus instance.
+
+```yaml
+serviceMonitor:
+  enabled: true
+  metricPath: /metrics
+```
+
+Alternatively, you can add the necessary static scrape configs to your Prometheus instance. For example:
+
+```yaml
+scrape_configs:
+  - job_name: 'terradrift'
+    scrape_interval: 300s
+    static_configs:
+      - targets: ['terradrift:8080']
+```
+
 
 
 ## Values
