@@ -1,0 +1,7 @@
+apiVersion: v2
+name: terradrift
+description: A Helm chart for terradrift - A tool that will navigate through all terraform directories (stacks) to run terraform plan to detect the current drift between the committed code and applied infrastructure.
+type: application
+
+version: 0.0.1
+appVersion: "0.0.1"

@@ -1,0 +1,135 @@
+# Default values for terradrift.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: rootsami/terradrift
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+server:
+  debug: false
+  repository: ""
+  interval: 3600
+  
+  ## Stack configuration for terradrift-server
+  ##
+  ## e.g.:
+  ## stacks:
+  ##   - name: core-staging
+  ##     path: gcp/core-staging
+  ##   - name: api-production
+  ##     path: gcp/api
+  ##     tfvars: environments/production.tfvars
+  ##     backend: environments/production.hcl
+  config: {}
+
+  ## Additional command line arguments
+  ##
+  ## e.g.:
+  ##  - --extra-backend-env=OTHER_ENV_VAR=other_value
+  ##
+  extraArgs: []
+
+  ## Additional server container environment variables
+  ##
+  ## You specify this manually like you would a raw deployment manifest.
+  ## This means you can bind in environment variables from secrets.
+  ## This is applicable to any environment variable such as GIT_TOKEN or Cloud provider credentials
+  ## such as AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY or GOOGLE_CREDENTIALS ..etc.
+  ##
+  ## Secrets can be created by following the below example steps:
+  ## kubectl create secret generic git-token --from-literal=token=ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  ## kubectl create secret generic gcp-credentials --from-file=/path/to/gcp/credentials.json
+  ##  
+  ## e.g. static environment variable:
+  ##  - name: GIT_TOKEN
+  ##    value: "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  ##  - name: GOOGLE_APPLICATION_CREDENTIALS
+  ##    value: "/var/secrets/gcloud/credentials.json" ## this is the path to the mounted volume in extraVolumes and extraVolumeMounts
+  ##
+  ## e.g. secret environment variable:
+  ## - name: GIT_TOKEN
+  ##   valueFrom:
+  ##     secretKeyRef:
+  ##       name: git-token
+  ##       key: token
+  env: []
+
+  ## Additional volumes to mount to the server container
+  ## e.g.:
+  ##  - name: gcp-credentials
+  ##    secret:
+  ##      secretName: gcp-credentials
+  ##
+  ##
+  extraVolumes: []
+
+
+  ## Additional volume mounts to mount to the server container
+  ##
+  ## e.g.:
+  ##  - name: gcp-credentials
+  ##    mountPath: /var/secrets/gcloud
+  ##  - name: aws-credentials
+  ##    mountPath: /var/secrets/aws
+  ##
+  extraVolumeMounts: []
+
+
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+
+## Create a serviceMonitor if only Prometheus Operator is installed 
+## to enable auto discovery of the service and scrape terradrift metrics
+serviceMonitor:
+  enabled: false
+  metricPath: /metrics
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

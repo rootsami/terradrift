@@ -1,0 +1,95 @@
+{{- $fullName := include "terradrift.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "terradrift.fullname" . }}
+  labels:
+    {{- include "terradrift.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "terradrift.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "terradrift.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "terradrift.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- if .Values.server.env }}
+          env:
+            {{- toYaml .Values.server.env | nindent 12 }}
+          {{- end }}
+          command: ["/bin/terradrift-server"] 
+          args:
+            - --repository={{ .Values.server.repository }}
+            - --interval={{ .Values.server.interval }}
+            - --config=/config/config.yaml
+            - --git-token=$(GIT_TOKEN)
+            - --port={{ .Values.service.port }}
+            - --hostname={{ include "terradrift.fullname" . }}
+            {{- if .Values.server.debug }}
+            - --debug
+            {{- end }}
+            {{- if .Values.server.extraArgs }}
+              {{- toYaml .Values.server.extraArgs | nindent 12 }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 120
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 60
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
+          {{- if .Values.server.extraVolumeMounts }}
+            {{- toYaml .Values.server.extraVolumeMounts | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ $fullName }}-stacks-config
+      {{- if .Values.server.extraVolumes }}
+        {{- toYaml .Values.server.extraVolumes | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

@@ -2,21 +2,13 @@
 
 ## Installation / Deployment
 The design of the service should be a running server that continuously runs those drift scans.
-TODO: add dockerfile and helm chart to enable easy deployment.
 
-### Configurations
-In [config.yaml](config.yaml), you have to define which repository that terradrift will scan those stacks from, also the stack's name, version and environment-specific variables.
-example:
-```yaml
-stacks:
-  - name: core-production
-    path: aws/core-production
+### Helm
+You can deploy the service using the helm chart in [deploy/helm/terradrift](../deploy/helm/terradrift/README.md)
 
-  - name: api-staging
-    path: gcp/api
-    tfvars: environments/staging.tfvars
-    backend: environments/staging.hcl
-```
+### Compose
+You can deploy the service using the docker-compose file in [deploy/docker-compose](../deploy/compose/README.md)
+
 
 ## How to develop/use terradrift-server locally?
 You can run the server locally following the example below after setting the required environment variables for Github token and the cloud provider. ex. GOOGLE_CREDENTIALS, AWS_CONFIG_FILE, AWS_SHARED_CREDENTIALS_FILE, etc. similar to how you would run terraform.
@@ -49,10 +41,33 @@ Flags:
 
 ```
 
+### Configurations
+In [config.yaml](config.yaml), you have to define which stacks that terradrift will scan, also the stack's name, version and environment-specific variables.
+| Field | Description | Required |
+| --- | --- | --- |
+| stacks | List of stacks that terradrift will scan | Yes |
+| stacks.name | Name of the stack | Yes |
+| stacks.path | Path to the stack's terraform files | Yes |
+| stacks.tfvars | Path to the stack's terraform variables file relative to the stack's path | No |
+| stacks.backend | Path to the stack's terraform backend file relative to the stack's path | No |
+
+
+Example:
+```yaml
+stacks:
+  - name: core-production
+    path: aws/core-production
+
+  - name: api-staging
+    path: gcp/api
+    tfvars: environments/staging.tfvars
+    backend: environments/staging.hcl
+```
+
 ## Examples
 ```bash
 $ ./terradrift-server --repository https://github.com/username/reponame \
---git-token $GITHUB_AUTH_TOKEN \
+--git-token $GITHUB_TOKEN \
 --config ./config.yaml \
 --extra-backend-vars GOOGLE_CREDENTIALS=$SERVICE_ACCOUNT_PATH \
 --interval 600 \

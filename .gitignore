@@ -31,3 +31,6 @@ workdir
 # binaries for terradrift
 bins/*
 dist/*
+
+# deployments
+deploy/compose/.env
