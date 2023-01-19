@@ -81,7 +81,7 @@ $ curl http://localhost:8080/api/plan?stack=api-staging
 {"drift":true,"add":1,"change":0,"destroy":0}
 
 $ curl http://localhost:8080/api/plan?stack=core-production
-{"drift":false,"add":0,"change":0,"destroy":1}
+{"drift":true,"add":0,"change":0,"destroy":1}
 ```
 
 Retrieving the drifts as prometheus metrics
