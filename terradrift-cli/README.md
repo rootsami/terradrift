@@ -17,7 +17,7 @@ $ go build -o terradrift-cli
 
 ### Binary
 
-Download the binary from the [releases]()
+Download the binary from the [releases](https://github.com/rootsami/terradrift/releases)
 
 ## Usage
 it can be used in multiple scenarios:
