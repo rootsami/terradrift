@@ -5,13 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"regexp"
-	"strconv"
 
 	"github.com/rootsami/terradrift/pkg/config"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/hashicorp/terraform-exec/tfexec"
+	tfjson "github.com/hashicorp/terraform-json"
 )
 
 type DriftSum struct {
@@ -143,7 +142,7 @@ func showPlan(plan bool, planFile string, name string, tf *tfexec.Terraform) (*D
 
 	if plan {
 
-		state, err := tf.ShowPlanFileRaw(context.Background(), planFile)
+		state, err := tf.ShowPlanFile(context.Background(), planFile)
 		if err != nil {
 			return nil, err
 		}
@@ -182,37 +181,29 @@ func stackExists(name string, stacks []config.Stack) (stack config.Stack, result
 }
 
 // driftCalculator returns a detailed number of changes that was detected in the plan
-func driftCalculator(state string) (*DriftSum, error) {
+func driftCalculator(state *tfjson.Plan) (*DriftSum, error) {
 
-	re := regexp.MustCompile("Plan:[^0-9]*(?P<add>[0-9])[^0-9]*(?P<change>[0-9])[^0-9]*(?P<destroy>[0-9])")
-	matches := re.FindStringSubmatch(state)
+	var driftSum *DriftSum
+	for _, resource := range state.ResourceChanges {
 
-	addIndex := re.SubexpIndex("add")
-	add, err := strconv.Atoi(matches[addIndex])
-	if err != nil {
-		return nil, err
+		for _, action := range resource.Change.Actions {
+			switch action {
+			case "create":
+				driftSum.Add++
+			case "update":
+				driftSum.Change++
+			case "delete":
+				driftSum.Destroy++
+			}
+		}
 	}
 
-	changeIndex := re.SubexpIndex("change")
-	change, err := strconv.Atoi(matches[changeIndex])
-	if err != nil {
-		return nil, err
+	// if any of the above counters is greater than 0, then drift is detected
+	if driftSum.Add > 0 || driftSum.Change > 0 || driftSum.Destroy > 0 {
+		driftSum.Drift = true
 	}
 
-	destroyIndex := re.SubexpIndex("destroy")
-	destroy, err := strconv.Atoi(matches[destroyIndex])
-	if err != nil {
-		return nil, err
-	}
-
-	DriftSum := &DriftSum{
-		Drift:   true,
-		Add:     add,
-		Change:  change,
-		Destroy: destroy,
-	}
-
-	return DriftSum, err
+	return driftSum, nil
 }
 
 // cleanUpPlanFile removes the plan file after the plan has been reported
