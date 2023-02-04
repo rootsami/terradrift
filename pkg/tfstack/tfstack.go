@@ -183,7 +183,7 @@ func stackExists(name string, stacks []config.Stack) (stack config.Stack, result
 // driftCalculator returns a detailed number of changes that was detected in the plan
 func driftCalculator(state *tfjson.Plan) (*DriftSum, error) {
 
-	var driftSum *DriftSum
+	var driftSum DriftSum
 	for _, resource := range state.ResourceChanges {
 
 		for _, action := range resource.Change.Actions {
@@ -203,7 +203,7 @@ func driftCalculator(state *tfjson.Plan) (*DriftSum, error) {
 		driftSum.Drift = true
 	}
 
-	return driftSum, nil
+	return &driftSum, nil
 }
 
 // cleanUpPlanFile removes the plan file after the plan has been reported
