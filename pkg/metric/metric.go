@@ -10,6 +10,8 @@ type Metrics struct {
 	ChangeResources  *prometheus.GaugeVec
 	AddResources     *prometheus.GaugeVec
 	DestroyResources *prometheus.GaugeVec
+	PlanFailure      *prometheus.GaugeVec
+	GitPullFailure   *prometheus.GaugeVec
 }
 
 func NewMetrics(reg prometheus.Registerer) *Metrics {
@@ -29,10 +31,22 @@ func NewMetrics(reg prometheus.Registerer) *Metrics {
 			Name:      "plan_destroy_resources",
 			Help:      "Number of resources to be destroyed based on tf plan",
 		}, []string{"stack"}),
+		PlanFailure: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "terradrift",
+			Name:      "plan_failure",
+			Help:      "Status of the last scan of a stack",
+		}, []string{"stack"}),
+		GitPullFailure: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Namespace: "terradrift",
+			Name:      "git_pull_failure",
+			Help:      "Status of the last git pull",
+		}, []string{}),
 	}
 	reg.MustRegister(m.AddResources)
 	reg.MustRegister(m.ChangeResources)
 	reg.MustRegister(m.DestroyResources)
+	reg.MustRegister(m.PlanFailure)
+	reg.MustRegister(m.GitPullFailure)
 
 	return m
 }

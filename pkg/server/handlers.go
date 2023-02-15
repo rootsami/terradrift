@@ -17,6 +17,9 @@ func (s Server) scanHandler(c *gin.Context) {
 	name := c.Query("stack")
 	planResp, err := tfstack.StackScan(name, s.Workdir, s.ConfigPath, s.ExtraBackendVars)
 
+	// Reset the plan failure metric
+	promMetrics.PlanFailure.With(prometheus.Labels{"stack": name}).Set(0)
+
 	if err == nil {
 
 		// Record metrics for drifts in resources
@@ -35,11 +38,13 @@ func (s Server) scanHandler(c *gin.Context) {
 			c.JSON(404, errorMessage)
 		} else if strings.Contains(errorMessage, "error acquiring the state lock") {
 
+			promMetrics.PlanFailure.With(prometheus.Labels{"stack": name}).Set(1)
 			// When there's a current terrafom plan in progress, terraform locks the state till it's finished.
 			c.JSON(502, "Another plan is in-progress for the requested stack, please try again in few minutes.")
 
 		} else {
 
+			promMetrics.PlanFailure.With(prometheus.Labels{"stack": name}).Set(1)
 			c.JSON(500, errorMessage)
 		}
 	}
@@ -48,9 +53,13 @@ func (s Server) scanHandler(c *gin.Context) {
 // gitHandler is a handler function for git sync endpoint
 func (s Server) gitHandler(c *gin.Context) {
 
+	// Reset the git failure metric
+	promMetrics.GitPullFailure.With(prometheus.Labels{}).Set(0)
+
 	status, err := git.GitPull(s.Workdir, s.GitToken, s.GitTimeout)
 	if err != nil {
-		c.JSON(500, err)
+		promMetrics.GitPullFailure.With(prometheus.Labels{}).Set(1)
+		c.JSON(500, error.Error(err))
 	} else {
 		c.JSON(200, status)
 	}
