@@ -24,7 +24,7 @@ func install(stack config.Stack, workdir string) (string, string, error) {
 	// Check if terraform version is defined in the stack files
 	v, err := detectTFVersion(workdir + stack.Path)
 	if err != nil {
-		log.WithField("stack", stack.Name).Debug("terraform version not defined in the stack")
+		err = errors.New("terraform version is not defined in the stack files")
 		return "", "", err
 	}
 

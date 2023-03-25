@@ -3,7 +3,6 @@ package tfstack
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/rootsami/terradrift/pkg/config"
@@ -44,7 +43,7 @@ func StackScan(name, workdir, configPath string, extraBackendVars map[string]str
 			log.WithFields(log.Fields{"stack": stack.Name}).Error(err)
 			return nil, err
 		}
-		log.WithFields(log.Fields{"stack": stack.Name}).Info(fmt.Sprintf("%+v", *response))
+		log.WithFields(log.Fields{"stack": stack.Name}).Infof("%+v", *response)
 		return response, nil
 
 	} else {
@@ -60,12 +59,12 @@ func StackInit(workdir string, stack config.Stack, extraBackendVars map[string]s
 	// The path for terrafom binary
 	execPath, tfver, err := install(stack, workdir)
 	if err != nil {
-		log.WithFields(log.Fields{"stack": stack.Name}).Error(err)
+		return nil, "", err
 	}
 
 	tf, err := tfexec.NewTerraform(workdir+stack.Path, execPath)
 	if err != nil {
-		log.WithFields(log.Fields{"stack": stack.Name}).Errorf("running NewTerraform: %s", err)
+		err = errors.New("failed to create terraform-exec instance")
 		return nil, "", err
 	}
 
@@ -97,9 +96,11 @@ func stackPlan(workdir string, stack config.Stack, tf *tfexec.Terraform) (*Drift
 
 	err := tf.Init(context.Background(), tfexec.Upgrade(false), tfexec.BackendConfig(stack.Backend))
 	if err != nil {
-		log.WithFields(log.Fields{"stack": stack.Name}).Error("running init")
+		err = errors.New("failed to initialize terraform")
 		return nil, err
 	}
+
+	log.WithFields(log.Fields{"stack": stack.Name}).Debug("terraform init complete")
 
 	// Create TF Plan options
 	planFile := workdir + stack.Path + "/" + stack.Name + ".plan"
@@ -128,6 +129,8 @@ func stackPlan(workdir string, stack config.Stack, tf *tfexec.Terraform) (*Drift
 			return nil, err
 		}
 	}
+
+	log.WithFields(log.Fields{"stack": stack.Name}).Debug("terraform plan complete")
 
 	err = cleanUpPlanFile(planFile)
 	if err != nil {
