@@ -116,6 +116,7 @@ func main() {
 			response, tfver, err := tfstack.StackInit(*workdir, s, *extraBackendVars)
 			if err != nil {
 				log.WithFields(log.Fields{"stack": s.Name}).Error(err)
+				response = &tfstack.DriftSum{}
 			}
 
 			stackOutputs = append(stackOutputs, stackOutput{
