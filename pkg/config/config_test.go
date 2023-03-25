@@ -1,42 +1,81 @@
 package config
 
 import (
-	"io/ioutil"
-
 	"testing"
 
-	"gopkg.in/yaml.v2"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestConfigLoader(t *testing.T) {
 	// Loading configuration file for repository and stack properties
-	stackConfig, err := ioutil.ReadFile("../../examples/config.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
 
-	var config Config
-	err = yaml.Unmarshal(stackConfig, &config)
-	if err != nil {
-		t.Fatal(err)
+	staticConfig := &Config{
+		Stacks: []Stack{
+			{
+				Name: "core-staging",
+				Path: "gcp/core-staging"},
+			{
+				Name:    "core-production",
+				Path:    "aws/core-production",
+				TFvars:  "",
+				Backend: ""},
+			{
+				Name:    "api-staging",
+				Path:    "gcp/api",
+				TFvars:  "environments/staging.tfvars",
+				Backend: "environments/staging.hcl"},
+			{
+				Name:    "api-production",
+				Path:    "gcp/api",
+				TFvars:  "environments/production.tfvars",
+				Backend: "environments/production.hcl"},
+		},
 	}
+	want := staticConfig
+	got, err := ConfigLoader("../../examples/", "../../examples/config.yaml")
 
-	err = ConfigValidator("../../examples/", &config)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err, "Unexpected error from ConfigLoader")
+	assert.Equal(t, want, got, "Config does not match expected output")
+
 }
 
 func TestConfigGenerator(t *testing.T) {
 
 	config, err := ConfigGenerator("../../examples/")
-	if err != nil {
-		t.Fatal(err)
-	}
+	want := &Config{
+		Stacks: []Stack{
+			{
+				Name:    "aws-core-production",
+				Path:    "aws/core-production",
+				TFvars:  "",
+				Backend: "",
+			},
 
-	err = ConfigValidator("../../examples/", config)
-	if err != nil {
-		t.Fatal(err)
+			{
+				Name:    "gcp-api-environments-production",
+				Path:    "gcp/api",
+				TFvars:  "environments/production.tfvars",
+				Backend: "environments/production.hcl",
+			},
+
+			{
+				Name:    "gcp-api-environments-staging",
+				Path:    "gcp/api",
+				TFvars:  "environments/staging.tfvars",
+				Backend: "environments/staging.hcl",
+			},
+
+			{
+				Name:    "gcp-core-staging",
+				Path:    "gcp/core-staging",
+				TFvars:  "",
+				Backend: "",
+			},
+		},
 	}
+	got := config
+
+	assert.NoError(t, err, "Unexpected error from ConfigGenerator")
+	assert.Equal(t, want, got, "Config does not match expected output")
 
 }
